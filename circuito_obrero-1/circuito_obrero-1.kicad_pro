@@ -606,7 +606,7 @@
       "include_excluded_from_bom": true,
       "name": "",
       "sort_asc": true,
-      "sort_field": "Reference"
+      "sort_field": "Footprint"
     },
     "bus_aliases": {},
     "connection_grid_size": 50.0,
@@ -657,7 +657,7 @@
         "uuid": "4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
       }
     ],
-    "used_designators": "",
+    "used_designators": "H8_GND1,H4_GND1,H7_VCC1,H5_A_j8_pin2,H5_VCC1,H6_VCC1,H1_GND1,H_A_j3_pin4,NT1,H2_GND1,H3_GND1,H1-8",
     "variants": []
   },
   "sheets": [

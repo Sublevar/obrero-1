@@ -1491,12 +1491,6 @@
 		(uuid "4740d27f-9e35-4847-ae9b-a8031a472295")
 	)
 	(junction
-		(at 234.95 123.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "490801d6-7c6f-46e3-8382-296d267d9ddb")
-	)
-	(junction
 		(at 142.24 95.25)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -1539,22 +1533,10 @@
 		(uuid "635dab65-c882-40bc-b4e1-babf919efcfe")
 	)
 	(junction
-		(at 190.5 74.93)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "6b97c219-65aa-4c67-8303-2e5b4e799490")
-	)
-	(junction
 		(at 195.58 90.17)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "6e3a3d91-104a-4c3c-8cb1-f041e39daad7")
-	)
-	(junction
-		(at 226.06 123.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "70f48e08-d87a-4d96-8c6b-9acca6f376aa")
 	)
 	(junction
 		(at 177.8 90.17)
@@ -1737,40 +1719,16 @@
 		(uuid "d0ce3477-3706-432d-8b1f-d9d02c07ae90")
 	)
 	(junction
-		(at 214.63 123.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "d285e520-34cc-420f-860c-6fd72d0f250c")
-	)
-	(junction
 		(at 41.91 90.17)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "d5e090a6-2539-48ab-b34c-9e8e7a2333f6")
 	)
 	(junction
-		(at 203.2 123.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "d604a680-1cc5-4427-ab37-a861ed7361de")
-	)
-	(junction
 		(at 195.58 92.71)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "db2d0e3a-63db-44a6-b3dc-aff7463dda51")
-	)
-	(junction
-		(at 168.91 74.93)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "e22665c4-27a7-4ed4-961c-8accce69e16c")
-	)
-	(junction
-		(at 144.78 74.93)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "e35966de-fe89-4ea4-92ce-67a61f8594b1")
 	)
 	(junction
 		(at 118.11 74.93)
@@ -1783,12 +1741,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "efb3b2a4-c43f-4d3f-ac14-8ce01babdeae")
-	)
-	(junction
-		(at 181.61 123.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "f1227438-5988-4a9e-a47e-9091aa1793f9")
 	)
 	(junction
 		(at 85.09 87.63)
@@ -1838,16 +1790,6 @@
 	)
 	(wire
 		(pts
-			(xy 214.63 123.19) (xy 226.06 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "012b9387-c0e5-498b-a10d-ce549ed75ebd")
-	)
-	(wire
-		(pts
 			(xy 81.28 97.79) (xy 88.9 97.79)
 		)
 		(stroke
@@ -1868,7 +1810,7 @@
 	)
 	(wire
 		(pts
-			(xy 168.91 74.93) (xy 177.8 74.93)
+			(xy 154.94 74.93) (xy 177.8 74.93)
 		)
 		(stroke
 			(width 0)
@@ -1905,26 +1847,6 @@
 			(type default)
 		)
 		(uuid "0392ad92-c280-483b-afc3-7fe4cc331c8c")
-	)
-	(wire
-		(pts
-			(xy 144.78 74.93) (xy 154.94 74.93)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "07fd69e3-b368-49c2-9521-3f6b0d65fd65")
-	)
-	(wire
-		(pts
-			(xy 214.63 123.19) (xy 214.63 134.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "089f2e35-a737-4b9d-858b-eb45f1db265b")
 	)
 	(wire
 		(pts
@@ -2128,7 +2050,7 @@
 	)
 	(wire
 		(pts
-			(xy 177.8 74.93) (xy 190.5 74.93)
+			(xy 177.8 74.93) (xy 208.28 74.93)
 		)
 		(stroke
 			(width 0)
@@ -2195,16 +2117,6 @@
 			(type default)
 		)
 		(uuid "396b5ecc-d198-45d8-ac66-c677cebd51ab")
-	)
-	(wire
-		(pts
-			(xy 226.06 123.19) (xy 226.06 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "397db9c9-92cf-4d97-83c1-2ecf3d8df141")
 	)
 	(wire
 		(pts
@@ -2278,16 +2190,6 @@
 	)
 	(wire
 		(pts
-			(xy 226.06 123.19) (xy 234.95 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4ee03883-30f9-42bf-b1be-cd9f70770560")
-	)
-	(wire
-		(pts
 			(xy 180.34 92.71) (xy 170.18 92.71)
 		)
 		(stroke
@@ -2338,16 +2240,6 @@
 	)
 	(wire
 		(pts
-			(xy 203.2 125.73) (xy 203.2 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "58e74379-45b9-448e-a18f-509a22f18e12")
-	)
-	(wire
-		(pts
 			(xy 187.96 92.71) (xy 195.58 92.71)
 		)
 		(stroke
@@ -2368,7 +2260,7 @@
 	)
 	(wire
 		(pts
-			(xy 118.11 74.93) (xy 144.78 74.93)
+			(xy 118.11 74.93) (xy 154.94 74.93)
 		)
 		(stroke
 			(width 0)
@@ -2468,16 +2360,6 @@
 	)
 	(wire
 		(pts
-			(xy 190.5 74.93) (xy 208.28 74.93)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6cb85379-ae07-4676-8d17-6be9450b1f54")
-	)
-	(wire
-		(pts
 			(xy 170.18 100.33) (xy 170.18 123.19)
 		)
 		(stroke
@@ -2525,16 +2407,6 @@
 			(type default)
 		)
 		(uuid "7855d7e1-60ed-4497-9abe-d6140b89c88d")
-	)
-	(wire
-		(pts
-			(xy 170.18 123.19) (xy 181.61 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7980b909-e084-46a2-81ea-d2d871c076b2")
 	)
 	(wire
 		(pts
@@ -2618,7 +2490,7 @@
 	)
 	(wire
 		(pts
-			(xy 208.28 123.19) (xy 214.63 123.19)
+			(xy 208.28 123.19) (xy 238.76 123.19)
 		)
 		(stroke
 			(width 0)
@@ -2808,17 +2680,7 @@
 	)
 	(wire
 		(pts
-			(xy 203.2 123.19) (xy 208.28 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a74cc507-279e-4e22-8802-c9fe92e90782")
-	)
-	(wire
-		(pts
-			(xy 181.61 123.19) (xy 203.2 123.19)
+			(xy 170.18 123.19) (xy 208.28 123.19)
 		)
 		(stroke
 			(width 0)
@@ -3148,16 +3010,6 @@
 	)
 	(wire
 		(pts
-			(xy 234.95 123.19) (xy 238.76 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d465056a-26e7-4b6b-8087-b303f0a02780")
-	)
-	(wire
-		(pts
 			(xy 142.24 107.95) (xy 195.58 107.95)
 		)
 		(stroke
@@ -3285,16 +3137,6 @@
 			(type default)
 		)
 		(uuid "e43bf12b-dc78-48c7-ab74-57d19f051881")
-	)
-	(wire
-		(pts
-			(xy 154.94 74.93) (xy 168.91 74.93)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e4dfb725-ad0c-4edd-b17c-a87f74759ffc")
 	)
 	(wire
 		(pts
@@ -3669,85 +3511,6 @@
 			(project "circuito_obrero-1"
 				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
 					(reference "R3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Mechanical:MountingHole_Pad")
-		(at 226.06 130.81 180)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "12ff8872-c7f3-407e-8dbb-be436bfdbb3d")
-		(property "Reference" "H3_GND1"
-			(at 228.6 130.8099 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "MountingHole_Pad"
-			(at 228.6 133.3499 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad_TopOnly"
-			(at 226.06 130.81 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 226.06 130.81 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Mounting Hole with connection"
-			(at 226.06 130.81 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "bbf3357a-c94f-42d0-96c3-f984bea2956d")
-		)
-		(instances
-			(project "circuito_obrero-1"
-				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
-					(reference "H3_GND1")
 					(unit 1)
 				)
 			)
@@ -4678,85 +4441,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole_Pad")
-		(at 168.91 72.39 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "4fc55f44-2810-4e90-878d-3b3d7983eb48")
-		(property "Reference" "H5_VCC1"
-			(at 171.45 69.8499 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole_Pad"
-			(at 171.45 72.3899 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad_TopOnly"
-			(at 168.91 72.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 168.91 72.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Mounting Hole with connection"
-			(at 168.91 72.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "58673c1d-6a45-4c5c-902c-65bd70133361")
-		)
-		(instances
-			(project "circuito_obrero-1"
-				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
-					(reference "H5_VCC1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R")
 		(at 184.15 102.87 90)
 		(unit 1)
@@ -4836,85 +4520,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole_Pad")
-		(at 181.61 125.73 180)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "5bedcd09-df15-4bcf-865a-4287f0fed794")
-		(property "Reference" "H8_GND1"
-			(at 184.15 125.7299 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "MountingHole_Pad"
-			(at 184.15 128.2699 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad_TopOnly"
-			(at 181.61 125.73 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 181.61 125.73 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Mounting Hole with connection"
-			(at 181.61 125.73 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "f02382e4-0f8d-4e98-a68e-651de1159573")
-		)
-		(instances
-			(project "circuito_obrero-1"
-				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
-					(reference "H8_GND1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:VCC")
 		(at 40.64 77.47 90)
 		(unit 1)
@@ -4988,85 +4593,6 @@
 			(project "circuito_obrero-1"
 				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
 					(reference "#PWR03")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Mechanical:MountingHole_Pad")
-		(at 144.78 72.39 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "5d7c1d68-f588-4efc-a237-ff5842aea394")
-		(property "Reference" "H7_VCC1"
-			(at 147.32 69.8499 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole_Pad"
-			(at 147.32 72.3899 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad_TopOnly"
-			(at 144.78 72.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 144.78 72.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Mounting Hole with connection"
-			(at 144.78 72.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "a8218064-f79d-4e01-9d95-b7244a21484f")
-		)
-		(instances
-			(project "circuito_obrero-1"
-				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
-					(reference "H7_VCC1")
 					(unit 1)
 				)
 			)
@@ -5543,85 +5069,6 @@
 			(project "circuito_obrero-1"
 				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
 					(reference "R13")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Mechanical:MountingHole_Pad")
-		(at 234.95 125.73 180)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "6c97797a-635b-4f6a-9964-7b8805c21bd2")
-		(property "Reference" "H4_GND1"
-			(at 237.49 125.7299 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "MountingHole_Pad"
-			(at 237.49 128.2699 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad_TopOnly"
-			(at 234.95 125.73 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 234.95 125.73 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Mounting Hole with connection"
-			(at 234.95 125.73 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "e07b03cb-1d43-418c-9600-efb3385ccdcc")
-		)
-		(instances
-			(project "circuito_obrero-1"
-				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
-					(reference "H4_GND1")
 					(unit 1)
 				)
 			)
@@ -6614,85 +6061,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole_Pad")
-		(at 203.2 128.27 180)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "a881c828-1f63-420e-b047-8825ce15c112")
-		(property "Reference" "H1_GND1"
-			(at 205.74 128.2699 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "MountingHole_Pad"
-			(at 205.74 130.8099 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad_TopOnly"
-			(at 203.2 128.27 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 203.2 128.27 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Mounting Hole with connection"
-			(at 203.2 128.27 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "1b18a395-30a0-498c-9874-65b86c36f824")
-		)
-		(instances
-			(project "circuito_obrero-1"
-				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
-					(reference "H1_GND1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R")
 		(at 69.85 102.87 90)
 		(unit 1)
@@ -7642,85 +7010,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole_Pad")
-		(at 214.63 137.16 180)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "e1b4ef04-a715-4d69-b840-52ee61a65601")
-		(property "Reference" "H2_GND1"
-			(at 217.17 137.1599 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "MountingHole_Pad"
-			(at 217.17 139.6999 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad_TopOnly"
-			(at 214.63 137.16 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 214.63 137.16 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Mounting Hole with connection"
-			(at 214.63 137.16 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "6cb62efa-ce58-480c-9434-1c371d254a00")
-		)
-		(instances
-			(project "circuito_obrero-1"
-				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
-					(reference "H2_GND1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Connector:Conn_01x03_Pin")
 		(at 134.62 90.17 0)
 		(unit 1)
@@ -7797,85 +7086,6 @@
 			(project "circuito_obrero-1"
 				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
 					(reference "J4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Mechanical:MountingHole_Pad")
-		(at 190.5 72.39 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "f2cf6a32-d04b-4a42-b908-0661c15ec936")
-		(property "Reference" "H6_VCC1"
-			(at 193.04 69.8499 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole_Pad"
-			(at 193.04 72.3899 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad_TopOnly"
-			(at 190.5 72.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 190.5 72.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Mounting Hole with connection"
-			(at 190.5 72.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "2582051b-5819-4958-b78b-5be9fecc2cd4")
-		)
-		(instances
-			(project "circuito_obrero-1"
-				(path "/4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
-					(reference "H6_VCC1")
 					(unit 1)
 				)
 			)

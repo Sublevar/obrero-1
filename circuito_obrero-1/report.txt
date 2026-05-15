@@ -1,0 +1,11 @@
+Info: Escala X restringida.
+Info: Escala Y restringida.
+Aviso: Corrección del ancho restringida. El valor de la corrección del ancho debe encontrarse en el rango de [0.000001 mm; 0.199999 mm] para las reglas de diseño actuales.
+Trazado a '/Users/santiagofernandez/Programacion/obrero-1/circuito_obrero-1/circuito_obrero-1-F_Cu.gbr'.
+Archivo de trabajo Gerber '/Users/santiagofernandez/Programacion/obrero-1/circuito_obrero-1/circuito_obrero-1-job.gbrjob' creado.
+Trazado a '/Users/santiagofernandez/Programacion/obrero-1/circuito_obrero-1/circuito_obrero-1-F_Cu.gbr'.
+Archivo de trabajo Gerber '/Users/santiagofernandez/Programacion/obrero-1/circuito_obrero-1/circuito_obrero-1-job.gbrjob' creado.
+Trazado a '/Users/santiagofernandez/Programacion/obrero-1/circuito_obrero-1/circuito_obrero-1-F_Cu.pdf'.
+Info: Listo.
+Info: Listo.
+Info: Listo.

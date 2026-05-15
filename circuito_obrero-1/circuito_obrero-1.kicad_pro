@@ -233,7 +233,7 @@
           "corner_radius_percentage": 80,
           "corner_style": 1,
           "max_amplitude": 1.0,
-          "min_amplitude": 0.2,
+          "min_amplitude": 0.5,
           "single_sided": false,
           "spacing": 0.6
         }
@@ -686,7 +686,7 @@
         "uuid": "4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
       }
     ],
-    "used_designators": "PUENTE_2-9,R25",
+    "used_designators": "puente2-6,J_out1,J_in1,U2,R7-13,J_in_encoder3-4,#PWR3,#PWR6",
     "variants": []
   },
   "sheets": [

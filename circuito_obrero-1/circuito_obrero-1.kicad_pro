@@ -686,7 +686,7 @@
         "uuid": "4aec249c-eea8-4ec7-952e-1b2aaf2b9eb5"
       }
     ],
-    "used_designators": "puente2-6,J_out1,J_in1,U2,R7-13,J_in_encoder3-4,#PWR3,#PWR6",
+    "used_designators": "H1-4",
     "variants": []
   },
   "sheets": [

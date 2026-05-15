@@ -6,10 +6,10 @@ Este documento explica el significado de las abreviaciones utilizadas en el sím
 
 | Pin KiCad | Abreviatura | Significado | Pin físico 74HC165 (DIP-16) |
 |-----------|-------------|-------------|------------------------------|
-| 1         | PL          | **Parallel Load** - Carga en paralelo (activo bajo). En datasheet: `SH/LD` | Pin 1 |
-| 2         | CP          | **Clock Pulse** - Entrada de reloj | Pin 2 |
-| 3         | DS Q7       | **Data Serial / Q7** - Entrada serie (`DS`) conectada a la salida serie (`Q7`) del chip anterior (cascada) | DS = Pin 10, Q7 = Pin 9 |
-| 4         | VCC         | Alimentación positiva (+5V o +3.3V) | Pin 16 |
+| 1         | VCC         | Alimentación positiva (+5V o +3.3V) | Pin 16 |
+| 2         | PL          | **Parallel Load** - Carga en paralelo (activo bajo). En datasheet: `SH/LD` | Pin 1 |
+| 3         | CP          | **Clock Pulse** - Entrada de reloj | Pin 2 |
+| 4         | DS Q7       | **Data Serial / Q7** - Entrada serie (`DS`) conectada a la salida serie (`Q7`) del chip anterior (cascada) | DS = Pin 10, Q7 = Pin 9 |
 | 5         | GND         | Tierra (0V) | Pin 8 |
 
 ## Notas importantes

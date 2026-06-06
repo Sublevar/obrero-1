@@ -25,6 +25,7 @@ firmware/             Binario ESP32 (esp-idf-svc, toolchain xtensa propio).
 # Tests del motor (host)
 cargo test -p obrero-core
 
+<<<<<<< HEAD
 # Build WASM
 cargo build -p obrero-wasm --target wasm32-unknown-unknown
 ```
@@ -55,6 +56,20 @@ cargo install espflash
 cd firmware
 cargo build      # primera build descarga ESP-IDF en .embuild/ — tarda
 ./dev.sh         # build + flash + monitor serial
+=======
+# Build + flash + monitor serial (todo junto)
+./dev.sh
+```
+
+Flasheo manual según target activo:
+
+```sh
+# ESP32 (rev1)
+espflash flash target/xtensa-esp32-espidf/debug/obrero-1 && espflash monitor
+
+# ESP32-S3
+espflash flash target/xtensa-esp32s3-espidf/debug/obrero-1 && espflash monitor
+>>>>>>> 56ef925 (entorno esp32s3)
 ```
 
 ## Entorno de testeo

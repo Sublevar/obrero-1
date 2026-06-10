@@ -1,0 +1,9 @@
+# Deploy de la versión web (Guiso). Base = raíz del repo: el build necesita
+# los crates Rust (rust-toolchain.toml hace que Netlify instale stable +
+# target wasm32 vía rustup) además de web/.
+[build]
+  command = "bash scripts/netlify-build.sh"
+  publish = "web/dist"
+
+[build.environment]
+  NODE_VERSION = "22"

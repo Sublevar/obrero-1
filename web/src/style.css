@@ -1,6 +1,12 @@
 :root {
   color-scheme: dark;
-  font-family: system-ui, sans-serif;
+  font-family: "Chivo", system-ui, sans-serif;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
 }
 
 body {
@@ -19,6 +25,14 @@ body {
 h1 {
   font-weight: 600;
   letter-spacing: 0.2em;
+  margin-bottom: 0;
+}
+
+.tagline {
+  color: #888;
+  font-style: italic;
+  margin-top: 0.3rem;
+  margin-bottom: 1.5rem;
 }
 
 .transport,
@@ -109,6 +123,59 @@ select {
 .cell.playhead {
   outline: 2px solid #6cf;
   outline-offset: -2px;
+}
+
+/* En modo euclidiano la grilla solo muestra la secuencia generada */
+.cell.locked {
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.gear {
+  margin-left: 8px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.mute {
+  margin-right: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.mute.active {
+  background: #a33;
+  border-color: #d55;
+}
+
+.config {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+  align-items: center;
+}
+
+/* display:inline-flex pisa el display:none que el navegador le da a [hidden] */
+.config[hidden] {
+  display: none;
+}
+
+.config select {
+  font-size: 0.8rem;
+}
+
+.config label {
+  font-size: 0.8rem;
+  color: #aaa;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.euclid-param {
+  width: 52px;
+  font-size: 0.8rem;
 }
 
 .status {

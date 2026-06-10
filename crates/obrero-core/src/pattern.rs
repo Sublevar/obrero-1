@@ -10,6 +10,23 @@ pub struct Step {
     pub gate_ticks: u8,
 }
 
+/// Cómo se define la secuencia de un track.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StepMode {
+    /// Pasos editados a mano en la grilla.
+    Manual,
+    /// Ritmo euclidiano: `pulses` golpes repartidos parejo en `steps` pasos.
+    Euclidean { pulses: u8, steps: u8 },
+}
+
+/// E(k, n) por aritmética modular: el paso i golpea si (i·k) mod n < k.
+/// Equivale a Bjorklund: E(3,8) = x..x..x. (tresillo), E(5,8) = x.x.xx.x.
+pub fn euclidean_hits(pulses: u8, steps: u8) -> impl Iterator<Item = bool> {
+    let k = pulses as u32;
+    let n = steps.max(1) as u32;
+    (0..n).map(move |i| (i * k) % n < k)
+}
+
 #[derive(Clone, Debug)]
 pub struct Track {
     /// Canal MIDI 0-15.
@@ -18,6 +35,7 @@ pub struct Track {
     /// Largo activo del track en pasos (permite polimetría; <= steps.len()).
     pub len: usize,
     pub muted: bool,
+    pub mode: StepMode,
 }
 
 impl Track {
@@ -35,7 +53,39 @@ impl Track {
             ],
             len: num_steps,
             muted: false,
+            mode: StepMode::Manual,
         }
+    }
+
+    /// Regenera la grilla con E(pulses, steps) y acorta el track a `steps`.
+    /// Conserva nota/velocidad/gate del track como base de los pasos nuevos.
+    pub fn apply_euclidean(&mut self, pulses: u8, steps: u8) {
+        let steps = steps.clamp(1, 64);
+        let pulses = pulses.min(steps);
+        let base = Step {
+            on: false,
+            ..self.steps.first().copied().unwrap_or(Step {
+                on: false,
+                note: 60,
+                velocity: 100,
+                gate_ticks: 3,
+            })
+        };
+        if self.steps.len() < steps as usize {
+            self.steps.resize(steps as usize, base);
+        }
+        self.len = steps as usize;
+        for (i, hit) in euclidean_hits(pulses, steps).enumerate() {
+            self.steps[i].on = hit;
+        }
+        self.mode = StepMode::Euclidean { pulses, steps };
+    }
+
+    /// Vuelve a edición manual conservando la grilla generada y reabriendo
+    /// el largo completo del track.
+    pub fn set_manual(&mut self) {
+        self.mode = StepMode::Manual;
+        self.len = self.steps.len();
     }
 }
 
@@ -67,15 +117,10 @@ pub struct Pattern {
 }
 
 impl Pattern {
-    /// Patrón inicial: 4 tracks de batería GM (canal 10) de 16 pasos.
-    pub fn default_drums() -> Self {
+    /// Patrón inicial: 5 tracks de 16 pasos en canal 1, notas 60-64 (C4..E4).
+    pub fn starter() -> Self {
         Self {
-            tracks: vec![
-                Track::new(9, 36, 16), // bombo
-                Track::new(9, 38, 16), // redoblante
-                Track::new(9, 42, 16), // hi-hat cerrado
-                Track::new(9, 46, 16), // hi-hat abierto
-            ],
+            tracks: (0..5).map(|i| Track::new(0, 60 + i, 16)).collect(),
             ticks_per_step: 6,
             channel_mode: ChannelMode::PerTrack,
         }

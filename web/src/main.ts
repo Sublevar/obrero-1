@@ -3,7 +3,7 @@ import { initMidi, listInputs, listOutputs, selectInput, selectOutput } from "./
 import { sendAll, startScheduler } from "./scheduler";
 import { Ui, type ViewModel } from "./ui";
 
-const NUM_TRACKS = 4;
+const NUM_TRACKS = 5;
 const NUM_STEPS = 16;
 
 async function main(): Promise<void> {
@@ -29,6 +29,9 @@ async function main(): Promise<void> {
     onTrackChannel: (t, ch) => engine.set_track_channel(t, ch),
     onTrackNote: (t, note) => engine.set_track_note(t, note),
     onChannelMode: (single, ch) => engine.set_channel_mode(single, ch),
+    onTrackEuclidean: (t, k, n) => engine.set_track_euclidean(t, k, n),
+    onTrackManual: (t) => engine.set_track_manual(t),
+    onTrackMute: (t) => engine.toggle_track_mute(t),
   });
 
   try {

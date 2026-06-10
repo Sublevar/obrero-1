@@ -1,5 +1,6 @@
 {
-  "name": "obrero-web",
+  "name": "guiso",
+  "description": "toda la magia midi en una misma olla",
   "private": true,
   "version": "0.1.0",
   "type": "module",

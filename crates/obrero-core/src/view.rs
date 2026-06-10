@@ -8,6 +8,14 @@ pub struct StepView {
     pub velocity: u8,
 }
 
+/// Parámetros del modo euclidiano de un track.
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[derive(Clone, Copy, Debug)]
+pub struct EuclideanView {
+    pub pulses: u8,
+    pub steps: u8,
+}
+
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[derive(Clone, Debug)]
 pub struct TrackView {
@@ -15,6 +23,10 @@ pub struct TrackView {
     pub muted: bool,
     /// Nota base del track (lane drum machine: la de sus pasos).
     pub note: u8,
+    /// Some = modo euclidiano con sus parámetros; None = manual.
+    pub euclidean: Option<EuclideanView>,
+    /// Paso sonando de ESTE track (los largos pueden diferir por polimetría).
+    pub current_step: usize,
     pub steps: Vec<StepView>,
 }
 

@@ -1,7 +1,7 @@
 use crate::input::{Button, InputEvent};
 use crate::midi::MidiParser;
-use crate::pattern::{ChannelMode, NoteEvent, Pattern, PPQN};
-use crate::view::{StepView, TrackView, ViewModel};
+use crate::pattern::{ChannelMode, NoteEvent, Pattern, StepMode, PPQN};
+use crate::view::{EuclideanView, StepView, TrackView, ViewModel};
 
 pub const MIDI_CLOCK: u8 = 0xF8;
 pub const MIDI_START: u8 = 0xFA;
@@ -90,7 +90,7 @@ pub struct Engine {
 
 impl Engine {
     pub fn new() -> Self {
-        Self::with_pattern(Pattern::default_drums())
+        Self::with_pattern(Pattern::starter())
     }
 
     pub fn with_pattern(pattern: Pattern) -> Self {
@@ -153,9 +153,35 @@ impl Engine {
 
     pub fn toggle_step(&mut self, track: usize, step: usize) {
         if let Some(t) = self.pattern.tracks.get_mut(track) {
+            // En modo euclidiano la grilla la define E(k,n), no la mano.
+            if matches!(t.mode, StepMode::Euclidean { .. }) {
+                return;
+            }
             if let Some(s) = t.steps.get_mut(step) {
                 s.on = !s.on;
             }
+        }
+    }
+
+    /// Activa modo euclidiano en el track: E(pulses, steps) regenera la grilla.
+    pub fn set_track_euclidean(&mut self, track: usize, pulses: u8, steps: u8) {
+        if let Some(t) = self.pattern.tracks.get_mut(track) {
+            t.apply_euclidean(pulses, steps);
+        }
+    }
+
+    /// Vuelve el track a edición manual (conserva la grilla generada).
+    pub fn set_track_manual(&mut self, track: usize) {
+        if let Some(t) = self.pattern.tracks.get_mut(track) {
+            t.set_manual();
+        }
+    }
+
+    /// Mutea/desmutea el track. Las notas ya disparadas apagan normalmente
+    /// (sus note-offs siguen agendados).
+    pub fn toggle_track_mute(&mut self, track: usize) {
+        if let Some(t) = self.pattern.tracks.get_mut(track) {
+            t.muted = !t.muted;
         }
     }
 
@@ -296,21 +322,23 @@ impl Engine {
     pub fn view(&self) -> ViewModel {
         let tps = self.pattern.ticks_per_step as u32;
         let last_tick = self.tick.saturating_sub(1);
-        let current_step = if self.transport == Transport::Playing && self.tick > 0 {
-            let len = self
-                .pattern
+        // Paso global desde Start; cada track lo reduce módulo su propio largo.
+        let global_step = if self.transport == Transport::Playing && self.tick > 0 {
+            Some((last_tick / tps) as usize)
+        } else {
+            None
+        };
+        let step_in = |len: usize| match global_step {
+            Some(g) if len > 0 => g % len,
+            _ => 0,
+        };
+        let current_step = step_in(
+            self.pattern
                 .tracks
                 .get(self.selected_track)
                 .map(|t| t.len)
-                .unwrap_or(0);
-            if len > 0 {
-                (last_tick / tps) as usize % len
-            } else {
-                0
-            }
-        } else {
-            0
-        };
+                .unwrap_or(0),
+        );
         ViewModel {
             playing: self.transport == Transport::Playing,
             bpm: self.bpm,
@@ -329,6 +357,13 @@ impl Engine {
                     channel: t.channel,
                     muted: t.muted,
                     note: t.steps.first().map(|s| s.note).unwrap_or(0),
+                    euclidean: match t.mode {
+                        StepMode::Euclidean { pulses, steps } => {
+                            Some(EuclideanView { pulses, steps })
+                        }
+                        StepMode::Manual => None,
+                    },
+                    current_step: step_in(t.len),
                     steps: t.steps[..t.len]
                         .iter()
                         .map(|s| StepView {

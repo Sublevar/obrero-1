@@ -11,6 +11,10 @@ export interface TrackView {
   channel: number;
   muted: boolean;
   note: number;
+  /** Parámetros euclidianos; null/ausente = modo manual. */
+  euclidean?: { pulses: number; steps: number } | null;
+  /** Paso sonando de este track (los largos pueden diferir). */
+  current_step: number;
   steps: StepView[];
 }
 
@@ -36,14 +40,21 @@ export interface UiCallbacks {
   onTrackChannel(track: number, channel: number): void;
   onTrackNote(track: number, note: number): void;
   onChannelMode(single: boolean, channel: number): void;
+  onTrackEuclidean(track: number, pulses: number, steps: number): void;
+  onTrackManual(track: number): void;
+  onTrackMute(track: number): void;
 }
 
-const TRACK_LABELS = ["Bombo", "Redoblante", "HH cerrado", "HH abierto"];
+const TRACK_LABELS: string[] = [];
 
 export class Ui {
   private grid: HTMLButtonElement[][] = [];
   private channelSelects: HTMLSelectElement[] = [];
   private noteInputs: HTMLInputElement[] = [];
+  private modeSelects: HTMLSelectElement[] = [];
+  private pulsesInputs: HTMLInputElement[] = [];
+  private stepsInputs: HTMLInputElement[] = [];
+  private muteButtons: HTMLButtonElement[] = [];
   private playBtn!: HTMLButtonElement;
   private bpmInput!: HTMLInputElement;
   private clockSelect!: HTMLSelectElement;
@@ -56,7 +67,8 @@ export class Ui {
 
   constructor(root: HTMLElement, numTracks: number, numSteps: number, cb: UiCallbacks) {
     root.innerHTML = `
-      <h1>obrero</h1>
+      <h1>Guiso</h1>
+      <p class="tagline">toda la magia midi en una misma olla</p>
       <div class="transport">
         <button id="play">▶ Play</button>
         <button id="stop">■ Stop</button>
@@ -99,7 +111,7 @@ export class Ui {
       opt.textContent = `Ch ${ch + 1}`;
       this.globalChannelSelect.appendChild(opt);
     }
-    this.globalChannelSelect.value = "9"; // canal 10: batería GM
+    this.globalChannelSelect.value = "0"; // canal 1
 
     const notifyChannelMode = () =>
       cb.onChannelMode(
@@ -131,6 +143,14 @@ export class Ui {
       label.textContent = TRACK_LABELS[t] ?? `Track ${t + 1}`;
       row.appendChild(label);
 
+      const mute = document.createElement("button");
+      mute.className = "mute";
+      mute.textContent = "M";
+      mute.title = "Mutear track";
+      mute.addEventListener("click", () => cb.onTrackMute(t));
+      row.appendChild(mute);
+      this.muteButtons.push(mute);
+
       // Canal MIDI del track: 1-16 en pantalla, 0-15 hacia el motor.
       const channel = document.createElement("select");
       channel.className = "channel";
@@ -145,17 +165,6 @@ export class Ui {
       row.appendChild(channel);
       this.channelSelects.push(channel);
 
-      // Nota MIDI del track (lane drum machine: una nota por instrumento).
-      const note = document.createElement("input");
-      note.type = "number";
-      note.className = "note";
-      note.min = "0";
-      note.max = "127";
-      note.title = "Nota MIDI";
-      note.addEventListener("change", () => cb.onTrackNote(t, Number(note.value)));
-      row.appendChild(note);
-      this.noteInputs.push(note);
-
       const cells: HTMLButtonElement[] = [];
       for (let s = 0; s < numSteps; s++) {
         const cell = document.createElement("button");
@@ -165,6 +174,77 @@ export class Ui {
         cells.push(cell);
       }
       this.grid.push(cells);
+
+      // Rueda de config al final de la fila: modo manual / euclidiano E(k,n)
+      const gear = document.createElement("button");
+      gear.className = "gear";
+      gear.textContent = "⚙";
+      gear.title = "Configurar track";
+
+      const config = document.createElement("span");
+      config.className = "config";
+      config.hidden = true;
+      gear.addEventListener("click", () => {
+        config.hidden = !config.hidden;
+      });
+
+      // Nota MIDI del track (lane drum machine: una nota por instrumento).
+      const noteLabel = document.createElement("label");
+      noteLabel.textContent = "Nota ";
+      const note = document.createElement("input");
+      note.type = "number";
+      note.className = "note";
+      note.min = "0";
+      note.max = "127";
+      note.title = "Nota MIDI";
+      note.addEventListener("change", () => cb.onTrackNote(t, Number(note.value)));
+      noteLabel.appendChild(note);
+      this.noteInputs.push(note);
+
+      const mode = document.createElement("select");
+      for (const [value, text] of [
+        ["manual", "Manual"],
+        ["euclid", "Euclidiano"],
+      ]) {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = text;
+        mode.appendChild(opt);
+      }
+
+      const pulses = document.createElement("input");
+      pulses.type = "number";
+      pulses.className = "euclid-param";
+      pulses.min = "0";
+      pulses.max = String(numSteps);
+      pulses.value = "4";
+      pulses.title = "Pulsos (k)";
+
+      const steps = document.createElement("input");
+      steps.type = "number";
+      steps.className = "euclid-param";
+      steps.min = "1";
+      steps.max = String(numSteps);
+      steps.value = String(numSteps);
+      steps.title = "Pasos (n)";
+
+      const applyMode = () => {
+        if (mode.value === "euclid") {
+          cb.onTrackEuclidean(t, Number(pulses.value), Number(steps.value));
+        } else {
+          cb.onTrackManual(t);
+        }
+      };
+      mode.addEventListener("change", applyMode);
+      pulses.addEventListener("change", applyMode);
+      steps.addEventListener("change", applyMode);
+
+      config.append(noteLabel, mode, pulses, steps);
+      row.append(gear, config);
+      this.modeSelects.push(mode);
+      this.pulsesInputs.push(pulses);
+      this.stepsInputs.push(steps);
+
       grid.appendChild(row);
     }
   }
@@ -192,6 +272,7 @@ export class Ui {
       this.globalChannelSelect.value = String(vm.single_channel);
     }
     for (let t = 0; t < this.grid.length; t++) {
+      this.muteButtons[t].classList.toggle("active", vm.tracks[t]?.muted ?? false);
       const channelSelect = this.channelSelects[t];
       // En modo canal único los selects por track no aplican
       channelSelect.hidden = single;
@@ -202,11 +283,35 @@ export class Ui {
       if (vm.tracks[t] && document.activeElement !== noteInput) {
         noteInput.value = String(vm.tracks[t].note);
       }
+
+      const euclid = vm.tracks[t]?.euclidean ?? null;
+      const modeSelect = this.modeSelects[t];
+      if (document.activeElement !== modeSelect) {
+        modeSelect.value = euclid ? "euclid" : "manual";
+      }
+      const pulsesInput = this.pulsesInputs[t];
+      const stepsInput = this.stepsInputs[t];
+      pulsesInput.hidden = !euclid;
+      stepsInput.hidden = !euclid;
+      if (euclid && document.activeElement !== pulsesInput) {
+        pulsesInput.value = String(euclid.pulses);
+      }
+      if (euclid && document.activeElement !== stepsInput) {
+        stepsInput.value = String(euclid.steps);
+      }
+
       const steps = vm.tracks[t]?.steps ?? [];
       for (let s = 0; s < this.grid[t].length; s++) {
         const cell = this.grid[t][s];
+        // La secuencia generada se ve en la grilla; los pasos fuera del
+        // largo del track se ocultan y en modo euclidiano no se editan.
+        cell.hidden = s >= steps.length;
+        cell.classList.toggle("locked", !!euclid);
         cell.classList.toggle("on", steps[s]?.on ?? false);
-        cell.classList.toggle("playhead", vm.playing && s === vm.current_step);
+        cell.classList.toggle(
+          "playhead",
+          vm.playing && s === (vm.tracks[t]?.current_step ?? 0),
+        );
       }
     }
   }

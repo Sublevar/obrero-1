@@ -6,5 +6,5 @@ pub mod view;
 
 pub use engine::{ClockSource, Engine, TimedMidi};
 pub use input::{Button, InputEvent};
-pub use pattern::{ChannelMode, Pattern, Step, Track};
+pub use pattern::{ChannelMode, Pattern, Step, StepMode, Track};
 pub use view::ViewModel;

@@ -80,7 +80,7 @@ fn overlapping_advance_windows_never_double_emit() {
 #[test]
 fn step_fires_note_on_and_gated_note_off() {
     let mut e = Engine::new();
-    e.toggle_step(0, 0); // bombo (nota 36, canal 9, gate 3 ticks) en el paso 0
+    e.toggle_step(0, 0); // track 0: nota 60, canal 0, gate 3 ticks
     let mut out = Vec::new();
     e.play();
     e.advance(0, 999_999, &mut out);
@@ -88,10 +88,10 @@ fn step_fires_note_on_and_gated_note_off() {
     let ns = notes(&out);
     assert_eq!(ns.len(), 2);
     let (t_on, st_on, note, vel) = ns[0];
-    assert_eq!((st_on, note, vel), (0x99, 36, 100));
+    assert_eq!((st_on, note, vel), (0x90, 60, 100));
     assert_eq!(t_on, 0);
     let (t_off, st_off, note_off, _) = ns[1];
-    assert_eq!((st_off, note_off), (0x89, 36));
+    assert_eq!((st_off, note_off), (0x80, 60));
     // gate de 3 ticks = 62500 µs a 120 BPM
     assert!((t_off as i64 - 62_500).abs() <= 1);
 }
@@ -106,7 +106,7 @@ fn pattern_loops_every_16_steps() {
     e.advance(0, 3_999_999, &mut out);
     let ons: Vec<_> = notes(&out)
         .into_iter()
-        .filter(|(_, s, _, _)| *s == 0x99)
+        .filter(|(_, s, _, _)| *s == 0x90)
         .collect();
     assert_eq!(ons.len(), 2);
     assert!((ons[1].0 as i64 - 2_000_000).abs() <= 1);
@@ -121,7 +121,7 @@ fn stop_emits_fc_and_flushes_hanging_notes() {
     let mut out = Vec::new();
     e.play();
     e.advance(0, 50_000, &mut out);
-    assert!(notes(&out).iter().any(|(_, s, _, _)| *s == 0x99));
+    assert!(notes(&out).iter().any(|(_, s, _, _)| *s == 0x90));
 
     out.clear();
     e.stop();
@@ -130,15 +130,15 @@ fn stop_emits_fc_and_flushes_hanging_notes() {
     assert_eq!(out[0].at_us, 60_000);
     let offs: Vec<_> = notes(&out)
         .into_iter()
-        .filter(|(_, s, _, _)| *s == 0x89)
+        .filter(|(_, s, _, _)| *s == 0x80)
         .collect();
     assert_eq!(offs.len(), 1);
-    assert_eq!(offs[0].2, 36);
+    assert_eq!(offs[0].2, 60);
 }
 
 #[test]
 fn external_clock_follow_matches_internal_output() {
-    // Patrón: bombo en pasos 0 y 8
+    // Patrón: track 0 en pasos 0 y 8
     let make = || {
         let mut e = Engine::new();
         e.toggle_step(0, 0);
@@ -184,12 +184,12 @@ fn external_stop_flushes_hanging_notes() {
     e.set_clock_source(ClockSource::External);
     let mut out = Vec::new();
     e.feed_midi_in(&[0xFA, 0xF8], 0, &mut out);
-    assert!(notes(&out).iter().any(|(_, s, _, _)| *s == 0x99));
+    assert!(notes(&out).iter().any(|(_, s, _, _)| *s == 0x90));
     out.clear();
     e.feed_midi_in(&[0xFC], 1_000, &mut out);
     let offs: Vec<_> = notes(&out)
         .into_iter()
-        .filter(|(_, s, _, _)| *s == 0x89)
+        .filter(|(_, s, _, _)| *s == 0x80)
         .collect();
     assert_eq!(offs.len(), 1);
 }
@@ -244,8 +244,8 @@ fn track_channel_change_applies_to_emitted_notes() {
 fn single_channel_mode_routes_all_tracks_through_one_channel() {
     use obrero_core::ChannelMode;
     let mut e = Engine::new();
-    e.toggle_step(0, 0); // bombo, nota 36
-    e.toggle_step(1, 0); // redoblante, nota 38
+    e.toggle_step(0, 0); // track 0, nota 60
+    e.toggle_step(1, 0); // track 1, nota 61
     e.set_track_channel(0, 2);
     e.set_track_channel(1, 5);
     e.set_channel_mode(ChannelMode::Single(7));
@@ -261,7 +261,7 @@ fn single_channel_mode_routes_all_tracks_through_one_channel() {
     assert!(ons.iter().all(|(_, s, _, _)| *s == 0x97));
     let mut played: Vec<u8> = ons.iter().map(|(_, _, n, _)| *n).collect();
     played.sort();
-    assert_eq!(played, vec![36, 38]);
+    assert_eq!(played, vec![60, 61]);
 
     // Volver a PerTrack restaura los canales propios
     e.stop();
@@ -284,7 +284,7 @@ fn single_channel_mode_routes_all_tracks_through_one_channel() {
 fn set_track_note_changes_emitted_note() {
     let mut e = Engine::new();
     e.toggle_step(0, 0);
-    e.set_track_note(0, 49); // crash en vez de bombo
+    e.set_track_note(0, 49); // retonificar el lane completo
     let mut out = Vec::new();
     e.play();
     e.advance(0, 50_000, &mut out);
@@ -294,6 +294,97 @@ fn set_track_note_changes_emitted_note() {
     // La nota se enmascara a 0-127
     e.set_track_note(0, 200);
     assert_eq!(e.view().tracks[0].note, 200 & 0x7F);
+}
+
+#[test]
+fn euclidean_generates_classic_patterns() {
+    let mut e = Engine::new();
+    // E(3,8) = tresillo: golpes en 0, 3, 6
+    e.set_track_euclidean(0, 3, 8);
+    let vm = e.view();
+    assert_eq!(vm.tracks[0].steps.len(), 8);
+    let hits: Vec<usize> = vm.tracks[0]
+        .steps
+        .iter()
+        .enumerate()
+        .filter(|(_, s)| s.on)
+        .map(|(i, _)| i)
+        .collect();
+    assert_eq!(hits, vec![0, 3, 6]);
+    let params = vm.tracks[0].euclidean.unwrap();
+    assert_eq!((params.pulses, params.steps), (3, 8));
+
+    // E(5,8) = x.x.xx.x
+    e.set_track_euclidean(0, 5, 8);
+    let hits: Vec<usize> = e.view().tracks[0]
+        .steps
+        .iter()
+        .enumerate()
+        .filter(|(_, s)| s.on)
+        .map(|(i, _)| i)
+        .collect();
+    assert_eq!(hits, vec![0, 2, 4, 5, 7]);
+}
+
+#[test]
+fn euclidean_track_plays_and_loops_at_its_own_length() {
+    let mut e = Engine::new();
+    e.set_track_euclidean(0, 3, 8);
+    let mut out = Vec::new();
+    e.play();
+    // 8 pasos × 6 ticks × 20833.33 µs = 1 s por vuelta a 120 BPM; 2 vueltas
+    e.advance(0, 1_999_999, &mut out);
+    let ons: Vec<_> = notes(&out)
+        .into_iter()
+        .filter(|(_, s, _, _)| *s == 0x90)
+        .collect();
+    assert_eq!(ons.len(), 6); // 3 golpes por vuelta × 2
+}
+
+#[test]
+fn euclidean_mode_ignores_manual_toggles_until_back_to_manual() {
+    let mut e = Engine::new();
+    e.set_track_euclidean(0, 3, 8);
+    e.toggle_step(0, 1); // ignorado: la grilla la define E(k,n)
+    assert!(!e.view().tracks[0].steps[1].on);
+
+    e.set_track_manual(0);
+    assert!(e.view().tracks[0].euclidean.is_none());
+    assert_eq!(e.view().tracks[0].steps.len(), 16); // largo completo de vuelta
+    e.toggle_step(0, 1);
+    assert!(e.view().tracks[0].steps[1].on);
+    // El patrón generado se conserva como punto de partida manual
+    assert!(e.view().tracks[0].steps[0].on);
+}
+
+#[test]
+fn euclidean_params_are_clamped() {
+    let mut e = Engine::new();
+    // pulses > steps se recorta a steps; steps 0 se eleva a 1
+    e.set_track_euclidean(0, 9, 4);
+    let params = e.view().tracks[0].euclidean.unwrap();
+    assert_eq!((params.pulses, params.steps), (4, 4));
+    e.set_track_euclidean(0, 1, 0);
+    assert_eq!(e.view().tracks[0].euclidean.unwrap().steps, 1);
+}
+
+#[test]
+fn muted_track_emits_nothing_until_unmuted() {
+    let mut e = Engine::new();
+    e.toggle_step(0, 0);
+    e.toggle_track_mute(0);
+    assert!(e.view().tracks[0].muted);
+    let mut out = Vec::new();
+    e.play();
+    e.advance(0, 999_999, &mut out);
+    assert!(notes(&out).is_empty());
+
+    e.toggle_track_mute(0);
+    assert!(!e.view().tracks[0].muted);
+    out.clear();
+    // Siguiente vuelta del loop: paso 0 vuelve a caer en t = 2 s (120 BPM)
+    e.advance(1_000_000, 1_000_000, &mut out);
+    assert!(notes(&out).iter().any(|(_, s, _, _)| *s == 0x90));
 }
 
 #[test]

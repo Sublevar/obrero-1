@@ -93,6 +93,21 @@ impl WasmEngine {
         self.inner.set_track_note(track, note);
     }
 
+    /// Modo euclidiano: E(pulses, steps) regenera la grilla del track.
+    pub fn set_track_euclidean(&mut self, track: usize, pulses: u8, steps: u8) {
+        self.inner.set_track_euclidean(track, pulses, steps);
+    }
+
+    /// Vuelve el track a edición manual.
+    pub fn set_track_manual(&mut self, track: usize) {
+        self.inner.set_track_manual(track);
+    }
+
+    /// Mutea/desmutea el track.
+    pub fn toggle_track_mute(&mut self, track: usize) {
+        self.inner.toggle_track_mute(track);
+    }
+
     /// true = todos los tracks salen por `channel` (modo drum machine);
     /// false = cada track usa su propio canal.
     pub fn set_channel_mode(&mut self, single: bool, channel: u8) {

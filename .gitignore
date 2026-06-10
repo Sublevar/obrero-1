@@ -1,4 +1,5 @@
 /.vscode
-/.embuild
 /target
-/Cargo.lock
+node_modules
+web/src/pkg
+web/dist

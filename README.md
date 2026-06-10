@@ -1,45 +1,60 @@
 # obrero-1
 
-ESP32 Rust demo usando FreeRTOS tasks via `esp-idf-svc`.
+Secuenciador MIDI de pasos en Rust, con doble target: **ESP32** (MIDI DIN por UART) y **web** (WASM + Web MIDI API). Toda la lógica vive en un core portable; las plataformas solo aportan tiempo e I/O.
 
-## Dependencias
+## Arquitectura
 
-| Crate | Version | Uso |
-|---|---|---|
-| `esp-idf-svc` | 0.51 | HAL + servicios ESP-IDF (GPIO, timers, FreeRTOS) |
-| `log` | 0.4 | Facade de logging |
-| `anyhow` | 1.0 | Manejo de errores |
-| `embuild` | 0.33 | Descarga y linking de ESP-IDF en tiempo de build |
-
-**Target:** `xtensa-esp32-espidf`
-**ESP-IDF:** v5.3.3
-**Toolchain:** `esp` (fork Xtensa de Rust — ver `rust-toolchain.toml`)
-
-## Setup
-
-```sh
-# Instalar toolchain ESP Rust
-cargo install espup && espup install
-source ~/export-esp.sh   # agregar al perfil de shell
-
-# Instalar herramienta de flasheo
-cargo install espflash
+```
+crates/obrero-core    Motor sans-io: parser MIDI, patrón, transporte, reloj 24 PPQN.
+                      Sin threads ni I/O — la plataforma llama advance(now, lookahead)
+                      y recibe eventos MIDI timestampeados. Testeable en host.
+crates/obrero-wasm    Bindings wasm-bindgen del motor para el navegador.
+web/                  UI TypeScript (vite): grilla de pasos, Web MIDI, scheduler
+                      con lookahead de 100 ms y send timestampeado.
+firmware/             Binario ESP32 (esp-idf-svc, toolchain xtensa propio).
+                      Excluido del workspace raíz — se compila aparte.
 ```
 
-La primera build descarga ESP-IDF y el toolchain Xtensa en `.embuild/` — tarda varios minutos. Las builds siguientes son rápidas.
+- Reloj interno (master, emite 0xF8/Start/Stop) o externo (esclavo de MIDI clock entrante).
+- Resolución interna 24 PPQN = MIDI clock; un paso de semicorchea = 6 ticks.
+- `MIDI-DIN.md` documenta el hardware DIN (6N137, UART2 a 31250 bps).
 
-## Workflow
+## Workspace raíz (stable)
 
 ```sh
-# Build
-cargo build
+# Tests del motor (host)
+cargo test -p obrero-core
 
-# Build + flash + monitor serial (todo junto)
-./dev.sh
+# Build WASM
+cargo build -p obrero-wasm --target wasm32-unknown-unknown
+```
 
-# Flash + monitor manualmente
-espflash flash target/xtensa-esp32-espidf/debug/obrero-1
-espflash monitor
+## Web
+
+Requiere `wasm-pack` (`cargo install wasm-pack`) y Node.
+
+```sh
+cd web
+npm install
+npm run wasm   # compila crates/obrero-wasm → web/src/pkg
+npm run dev    # http://localhost:5173 (Web MIDI requiere Chrome/Edge)
+```
+
+Elegí una salida MIDI (sintetizador, DAW o loopback virtual) y dale Play. Para modo esclavo, seleccioná una entrada MIDI y reloj "Externo".
+
+## Firmware ESP32
+
+Tiene su propio toolchain (`esp`, fork Xtensa — ver `firmware/rust-toolchain.toml`) y ESP-IDF v5.3.3 via embuild.
+
+```sh
+# Setup (una vez)
+cargo install espup && espup install
+source ~/export-esp.sh   # agregar al perfil de shell
+cargo install espflash
+
+cd firmware
+cargo build      # primera build descarga ESP-IDF en .embuild/ — tarda
+./dev.sh         # build + flash + monitor serial
 ```
 
 ## Entorno de testeo

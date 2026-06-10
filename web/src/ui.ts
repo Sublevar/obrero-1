@@ -138,17 +138,23 @@ export class Ui {
     for (let t = 0; t < numTracks; t++) {
       const row = document.createElement("div");
       row.className = "row";
+
+      // Tres grupos por fila: cabecera, tiles y config — en pantallas
+      // angostas los tiles fluyen a su propia línea y warpean.
+      const head = document.createElement("div");
+      head.className = "track-head";
+
       const label = document.createElement("span");
       label.className = "label";
       label.textContent = TRACK_LABELS[t] ?? `Track ${t + 1}`;
-      row.appendChild(label);
+      head.appendChild(label);
 
       const mute = document.createElement("button");
       mute.className = "mute";
       mute.textContent = "M";
       mute.title = "Mutear track";
       mute.addEventListener("click", () => cb.onTrackMute(t));
-      row.appendChild(mute);
+      head.appendChild(mute);
       this.muteButtons.push(mute);
 
       // Canal MIDI del track: 1-16 en pantalla, 0-15 hacia el motor.
@@ -162,15 +168,17 @@ export class Ui {
         channel.appendChild(opt);
       }
       channel.addEventListener("change", () => cb.onTrackChannel(t, Number(channel.value)));
-      row.appendChild(channel);
+      head.appendChild(channel);
       this.channelSelects.push(channel);
 
+      const cellsBox = document.createElement("div");
+      cellsBox.className = "cells";
       const cells: HTMLButtonElement[] = [];
       for (let s = 0; s < numSteps; s++) {
         const cell = document.createElement("button");
         cell.className = "cell" + (s % 4 === 0 ? " beat" : "");
         cell.addEventListener("click", () => cb.onToggleStep(t, s));
-        row.appendChild(cell);
+        cellsBox.appendChild(cell);
         cells.push(cell);
       }
       this.grid.push(cells);
@@ -240,7 +248,10 @@ export class Ui {
       steps.addEventListener("change", applyMode);
 
       config.append(noteLabel, mode, pulses, steps);
-      row.append(gear, config);
+      const tail = document.createElement("div");
+      tail.className = "track-tail";
+      tail.append(gear, config);
+      row.append(head, cellsBox, tail);
       this.modeSelects.push(mode);
       this.pulsesInputs.push(pulses);
       this.stepsInputs.push(steps);

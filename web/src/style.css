@@ -80,8 +80,24 @@ select {
 
 .row {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   align-items: center;
+}
+
+.track-head,
+.track-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Los tiles warpean cuando no entran en el ancho disponible */
+.cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
 }
 
 .label {
@@ -182,4 +198,53 @@ select {
   margin-top: 1rem;
   color: #888;
   font-size: 0.85rem;
+}
+
+/* ── Teléfonos ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  #app {
+    padding: 1rem 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .label {
+    width: auto;
+    min-width: 56px;
+  }
+
+  .grid {
+    gap: 14px;
+  }
+
+  .row {
+    row-gap: 6px;
+  }
+
+  select,
+  input[type="number"] {
+    max-width: 9rem;
+  }
+
+  .config {
+    flex-wrap: wrap;
+  }
+}
+
+/* Targets táctiles más generosos */
+@media (pointer: coarse) {
+  .cell {
+    width: 40px;
+    height: 40px;
+  }
+
+  button {
+    min-height: 38px;
+  }
 }

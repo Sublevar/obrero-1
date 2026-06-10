@@ -4,8 +4,12 @@
 [package]
 name = "obrero-1"
 version = "0.1.0"
-authors = ["stfg.prof <stfg.prof@gmail.com>"]
+authors = [
+    "Pablo Labarta <pablitolabarta@gmail.com>",
+    "Santiago Fernandez <stfg.prof@gmail.com>",
+]
 edition = "2021"
+license = "GPL-3.0-or-later"
 resolver = "2"
 rust-version = "1.77"
 

@@ -60,3 +60,7 @@ cargo build      # primera build descarga ESP-IDF en .embuild/ — tarda
 ## Entorno de testeo
 
 [Web MIDI Tester](https://studiocode.dev/webmidi-tester/midi)
+
+## Licencia
+
+[GPL-3.0-or-later](LICENSE) — © 2026 Pablo Labarta <pablitolabarta@gmail.com> & Santiago Fernandez <stfg.prof@gmail.com>.

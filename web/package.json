@@ -1,6 +1,11 @@
 {
   "name": "guiso",
   "description": "toda la magia midi en una misma olla",
+  "license": "GPL-3.0-or-later",
+  "contributors": [
+    "Pablo Labarta <pablitolabarta@gmail.com>",
+    "Santiago Fernandez <stfg.prof@gmail.com>"
+  ],
   "private": true,
   "version": "0.1.0",
   "type": "module",

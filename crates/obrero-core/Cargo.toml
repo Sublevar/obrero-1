@@ -2,6 +2,11 @@
 name = "obrero-core"
 version = "0.1.0"
 edition = "2021"
+license = "GPL-3.0-or-later"
+authors = [
+    "Pablo Labarta <pablitolabarta@gmail.com>",
+    "Santiago Fernandez <stfg.prof@gmail.com>",
+]
 
 [features]
 default = []

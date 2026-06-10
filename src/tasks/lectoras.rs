@@ -7,13 +7,15 @@ use esp_idf_svc::hal::spi::{
 };
 use esp_idf_svc::hal::units::Hertz;
 
-use crate::perifericos::{update_encoders_from_bits, Encoder};
+const DEBUG: bool = false;
 
 pub unsafe extern "C" fn lectoras(_: *mut core::ffi::c_void) {
     let peripherals = match Peripherals::take() {
         Ok(p) => p,
         Err(e) => {
-            println!("[lectoras] ERROR: no se pudo tomar Peripherals: {:?}", e);
+            if DEBUG {
+                println!("[lectoras] ERROR: no se pudo tomar Peripherals: {:?}", e);
+            }
             return;
         }
     };
@@ -37,39 +39,45 @@ pub unsafe extern "C" fn lectoras(_: *mut core::ffi::c_void) {
     let mut spi =
         SpiDeviceDriver::new(driver, Option::<AnyIOPin>::None, &spi_config).unwrap();
 
-    println!("[lectoras] SPI inicializado, entrando al loop");
+    if DEBUG {
+        println!("[lectoras] SPI inicializado, entrando al loop");
+    }
 
-    let mut encoders: [Encoder; 8] = core::array::from_fn(|_| Encoder::new());
-    let mut ciclo: u32 = 0;
+    let mut ultimo: u16 = 0xFFFF;
 
     loop {
-        ciclo += 1;
-
-        // Pulso LOW en LC: latch simultáneo de los 3 chips
+        // Pulso LOW en LC: latch simultáneo de los 2 chips en cascada
         lc.set_low().unwrap();
         lc.set_high().unwrap();
 
-        // Leer 3 bytes via SPI/DMA (24 pulsos CLK)
-        let mut buf = [0u8; 3];
+        // Leer 2 bytes via SPI (16 pulsos CLK) — dos 74HC165 en cascada
+        let mut buf = [0u8; 2];
         match spi.read(&mut buf) {
             Ok(_) => {
-                let bits: u32 =
-                    ((buf[0] as u32) << 16) | ((buf[1] as u32) << 8) | (buf[2] as u32);
+                let bits: u16 = ((buf[0] as u16) << 8) | (buf[1] as u16);
 
-                println!(
-                    "[spi] chip3: 0x{:02X} ({:08b})  chip2: 0x{:02X} ({:08b})  chip1: 0x{:02X} ({:08b})  | 24-bit: {:024b}",
-                    buf[0], buf[0], buf[1], buf[1], buf[2], buf[2], bits,
-                );
+                if bits != ultimo {
+                    ultimo = bits;
+                    println!(
+                        "[spi] {:04b} {:04b} {:04b} {:04b}",
+                        (bits >> 12) & 0xF,
+                        (bits >> 8) & 0xF,
+                        (bits >> 4) & 0xF,
+                        bits & 0xF,
+                    );
+                }
 
-                update_encoders_from_bits(&mut encoders, bits);
+                if DEBUG {
+                    println!("[spi] buf = {:08b} {:08b}", buf[0], buf[1]);
+                }
             }
-            Err(e) => println!("[spi] error: {:?}", e),
+            Err(e) => {
+                if DEBUG {
+                    println!("[spi] error: {:?}", e);
+                }
+            }
         }
 
-        if ciclo % 15 == 0 {
-            println!("[tick] alive - ciclo {}", ciclo);
-        }
-
-        FreeRtos::delay_ms(20);
+        //FreeRtos::delay_ms(20);
     }
 }

@@ -47,3 +47,4 @@ embedded-hal = "1"
 
 [build-dependencies]
 embuild = "0.33"
+dotenvy = "0.15"

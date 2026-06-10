@@ -26,6 +26,51 @@ source ~/export-esp.sh   # agregar al perfil de shell
 cargo install espflash
 ```
 
+## Conectores de entrada (molex_PCB)
+
+El circuito expone dos conectores Molex de 5 pines en la PCB.
+
+### Conector 1 — entrada de datos serie (DS)
+
+| Pin | Señal | GPIO ESP32 | Descripción |
+|-----|-------|------------|-------------|
+| 1   | VCC   | —          | Alimentación |
+| 2   | PL    | `gpio22`   | Parallel Load / SH-!LD (latch de entradas) |
+| 3   | CP    | `gpio23`   | Clock Pulse / SPI2 SCLK |
+| 4   | DS    | `gpio2`    | Data Serial in / SPI2 MOSI (dummy, no conectado) |
+| 5   | GND   | —          | Tierra |
+
+### Conector 2 — salida de datos serie (Q7)
+
+| Pin | Señal | GPIO ESP32 | Descripción |
+|-----|-------|------------|-------------|
+| 1   | VCC   | —          | Alimentación |
+| 2   | PL    | `gpio22`   | Parallel Load / SH-!LD (latch de entradas) |
+| 3   | CP    | `gpio23`   | Clock Pulse / SPI2 SCLK |
+| 4   | Q7    | `gpio35`   | Salida serie del último shift register / SPI2 MISO |
+| 5   | GND   | —          | Tierra |
+
+## Pines ESP32 usados
+
+- `gpio22` → LC / SH-!LD latch (pulso LOW para capturar entradas, luego HIGH)
+- `gpio23` → SPI2 SCLK
+- `gpio2`  → SPI2 MOSI (dummy, no conectado)
+- `gpio35` → SPI2 MISO (QH salida serie)
+
+## Configuración de encoders
+
+El número de encoders se define en el archivo `.env` de la raíz del proyecto.
+
+- Variable: `ENCODER_COUNT`
+- Valor válido: `1` a `8`
+- Ejemplo para probar solo 4 encoders:
+
+```env
+ENCODER_COUNT=4
+```
+
+Si no se define, el valor por defecto es `8`.
+
 La primera build descarga ESP-IDF y el toolchain Xtensa en `.embuild/` — tarda varios minutos. Las builds siguientes son rápidas.
 
 ## Workflow

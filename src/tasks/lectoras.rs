@@ -7,18 +7,8 @@ use esp_idf_svc::hal::spi::{
 };
 use esp_idf_svc::hal::units::Hertz;
 
-const DEBUG: bool = false;
-
 pub unsafe extern "C" fn lectoras(_: *mut core::ffi::c_void) {
-    let peripherals = match Peripherals::take() {
-        Ok(p) => p,
-        Err(e) => {
-            if DEBUG {
-                println!("[lectoras] ERROR: no se pudo tomar Peripherals: {:?}", e);
-            }
-            return;
-        }
-    };
+    let peripherals = Peripherals::take().unwrap();
 
     // LC / SH-!LD: pulso LOW → latch entradas paralelas, luego HIGH
     let mut lc = PinDriver::output(peripherals.pins.gpio22).unwrap();
@@ -34,50 +24,27 @@ pub unsafe extern "C" fn lectoras(_: *mut core::ffi::c_void) {
     )
     .unwrap();
 
-    // Modo 0 (CPOL=0 / CPHA=0): CLK idle LOW, muestreo en flanco ascendente
     let spi_config = SpiConfig::new().baudrate(Hertz(1_000_000));
     let mut spi =
         SpiDeviceDriver::new(driver, Option::<AnyIOPin>::None, &spi_config).unwrap();
 
-    if DEBUG {
-        println!("[lectoras] SPI inicializado, entrando al loop");
-    }
-
-    let mut ultimo: u16 = 0xFFFF;
+    let mut ultimo: u8 = 0xFF;
 
     loop {
-        // Pulso LOW en LC: latch simultáneo de los 2 chips en cascada
+        // Pulso LOW en LC: latch entradas paralelas
         lc.set_low().unwrap();
         lc.set_high().unwrap();
 
-        // Leer 2 bytes via SPI (16 pulsos CLK) — dos 74HC165 en cascada
-        let mut buf = [0u8; 2];
-        match spi.read(&mut buf) {
-            Ok(_) => {
-                let bits: u16 = ((buf[0] as u16) << 8) | (buf[1] as u16);
-
-                if bits != ultimo {
-                    ultimo = bits;
-                    println!(
-                        "[spi] {:04b} {:04b} {:04b} {:04b}",
-                        (bits >> 12) & 0xF,
-                        (bits >> 8) & 0xF,
-                        (bits >> 4) & 0xF,
-                        bits & 0xF,
-                    );
-                }
-
-                if DEBUG {
-                    println!("[spi] buf = {:08b} {:08b}", buf[0], buf[1]);
-                }
-            }
-            Err(e) => {
-                if DEBUG {
-                    println!("[spi] error: {:?}", e);
-                }
+        // Leer 1 byte via SPI (8 pulsos CLK) — un 74HC165
+        let mut buf = [0u8; 1];
+        if spi.read(&mut buf).is_ok() {
+            let bits = buf[0];
+            if bits != ultimo {
+                ultimo = bits;
+                println!("[spi] {:08b}", bits);
             }
         }
 
-        //FreeRtos::delay_ms(20);
+        FreeRtos::delay_ms(10);
     }
 }

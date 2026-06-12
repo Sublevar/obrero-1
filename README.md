@@ -2,6 +2,13 @@
 
 ESP32 Rust demo usando FreeRTOS tasks via `esp-idf-svc`.
 
+
+# Desarrollo hardware
+## circuitos Encoders:
+el pin horario y antiorario van PULL UP
+el pin del boton va a PULL DOWN
+
+# desarrollo software
 ## Dependencias
 
 | Crate | Version | Uso |

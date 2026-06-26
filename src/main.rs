@@ -7,6 +7,8 @@ use std::ffi::CString;
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
+    // Inicializa el logger de esp-idf para que `println!` y logs de Rust se vean en UART
+    esp_idf_svc::log::EspLogger::initialize_default();
 
     unsafe {
         xTaskCreatePinnedToCore(

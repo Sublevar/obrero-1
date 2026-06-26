@@ -39,7 +39,7 @@ target = "xtensa-esp32s3-espidf"   # ← target del chip destino
 
 [env]
 MCU = "esp32s3"                     # ← nombre del MCU para ESP-IDF
-```
+    ```
 
 ## PSRAM en ESP32-S3
 

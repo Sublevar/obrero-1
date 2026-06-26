@@ -1,4 +1,4 @@
-MODEL="esp32" #esp32s3 
+MODEL="esp32s3" # "esp32" #esp32s3 
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

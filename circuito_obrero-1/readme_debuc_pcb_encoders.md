@@ -1,4 +1,4 @@
-# Protocolo de control de calidad de encoderd(PCB)
+# Protocolo de control de calidad de encoders(PCB)
 
 ## Procedimiento de armado de PCB
 1. Una vez comido el circuito probar continuidad en todas su pistas
@@ -8,7 +8,7 @@
 5. nuevamente probar continuidad
 
 
-## testeo por software
+## Testeo por software
 1. conectar esp32 y realizar una lectura del SPI de los 2 bytes del modulo
 2. probar voltajes en todos los pines molex de 5 vias
 3. forzar en los 4 pines de lectura GND y comprobar su lectura 

@@ -16,3 +16,28 @@
 5. colocar 1 potencionmetro y comporbar funcionamiento de cada molex
 6. colocar todos los potenciometros y controlar el funcionamiento general
 7. concatenar el modulo a otro y comprobar su correcta comunicacion
+(POSIBLE AUTOMATIZACION SIMULANDO IN DE LA PLACA  SIMULANDO CASCADA)
+
+## Conectores de entrada (molex_PCB)
+
+El circuito expone dos conectores Molex de 5 pines en la PCB.
+
+### Conector 1 — entrada de datos serie (DS)
+
+| Pin | Señal | GPIO ESP32 | Descripción |
+|-----|-------|------------|-------------|
+| 1   | VCC   | —          | Alimentación |
+| 2   | PL    | `gpio22`   | Parallel Load / SH-!LD (latch de entradas) |
+| 3   | CP    | `gpio23`   | Clock Pulse / SPI2 SCLK |
+| 4   | DS    | `gpio2`    | Data Serial in / SPI2 MOSI (dummy, no conectado) |
+| 5   | GND   | —          | Tierra |
+
+### Conector 2 — salida de datos serie (Q7)
+
+| Pin | Señal | GPIO ESP32 | Descripción |
+|-----|-------|------------|-------------|
+| 1   | VCC   | —          | Alimentación |
+| 2   | PL    | `gpio22`   | Parallel Load / SH-!LD (latch de entradas) |
+| 3   | CP    | `gpio23`   | Clock Pulse / SPI2 SCLK |
+| 4   | Q7    | `gpio35`   | Salida serie del último shift register / SPI2 MISO |
+| 5   | GND   | —          | Tierra |

@@ -39,23 +39,23 @@ El circuito expone dos conectores Molex de 5 pines en la PCB.
 
 ### Conector 1 — entrada de datos serie (DS)
 
-| Pin | Señal | GPIO ESP32 | Descripción |
-|-----|-------|------------|-------------|
-| 1   | VCC   | —          | Alimentación |
-| 2   | PL    | `gpio22`   | Parallel Load / SH-!LD (latch de entradas) |
-| 3   | CP    | `gpio23`   | Clock Pulse / SPI2 SCLK |
-| 4   | DS    | `gpio2`    | Data Serial in / SPI2 MOSI (dummy, no conectado) |
-| 5   | GND   | —          | Tierra |
+| Pin | Señal | GPIO ESP32 | GPIO ESP32-S3 | Descripción |
+|-----|-------|------------|---------------|-------------|
+| 1   | VCC   | —          | —             | Alimentación |
+| 2   | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
+| 3   | CP    | `gpio23`   | `gpio18`      | Clock Pulse / SPI2 SCLK |
+| 4   | DS    | `gpio2`    | `gpio19`      | Data Serial in / SPI2 MOSI (dummy, no conectado) |
+| 5   | GND   | —          | —             | Tierra |
 
 ### Conector 2 — salida de datos serie (Q7)
 
-| Pin | Señal | GPIO ESP32 | Descripción |
-|-----|-------|------------|-------------|
-| 1   | VCC   | —          | Alimentación |
-| 2   | PL    | `gpio22`   | Parallel Load / SH-!LD (latch de entradas) |
-| 3   | CP    | `gpio23`   | Clock Pulse / SPI2 SCLK |
-| 4   | Q7    | `gpio35`   | Salida serie del último shift register / SPI2 MISO |
-| 5   | GND   | —          | Tierra |
+| Pin | Señal | GPIO ESP32 | GPIO ESP32-S3 | Descripción |
+|-----|-------|------------|---------------|-------------|
+| 1   | VCC   | —          | —             | Alimentación |
+| 2   | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
+| 3   | CP    | `gpio23`   | `gpio18`      | Clock Pulse / SPI2 SCLK |
+| 4   | Q7    | `gpio35`   | `gpio20`      | Salida serie del último shift register / SPI2 MISO |
+| 5   | GND   | —          | —             | Tierra |
 
 ## Pines ESP32 usados
 
@@ -63,6 +63,13 @@ El circuito expone dos conectores Molex de 5 pines en la PCB.
 - `gpio23` → SPI2 SCLK
 - `gpio2`  → SPI2 MOSI (dummy, no conectado)
 - `gpio35` → SPI2 MISO (QH salida serie)
+
+## Pines ESP32-S3 (propuesta)
+
+- `gpio10` → LC / SH-!LD latch (PL)
+- `gpio18` → SPI SCLK (CP)
+- `gpio19` → SPI MOSI (DS / dummy)
+- `gpio20` → SPI MISO (Q7)
 
 ## Configuración de encoders
 

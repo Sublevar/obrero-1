@@ -27,3 +27,12 @@ molex 5 pines
 3 antihorario
 4 boton
 5 gnd
+
+## Mapeo de señales a GPIO (ESP32 / ESP32-S3)
+
+| Señal | GPIO ESP32 | GPIO ESP32-S3 (propuesta) |
+|-------|------------|--------------------------|
+| PL    | `gpio22`   | `gpio10`                 |
+| CP    | `gpio23`   | `gpio18`                 |
+| DS    | `gpio2`    | `gpio19`                 |
+| Q7    | `gpio35`   | `gpio20`                 |

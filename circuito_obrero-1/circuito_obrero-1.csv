@@ -1,0 +1,5 @@
+"Reference","Qty","Value","DNP","Exclude from BOM","Exclude from Board","Footprint","Datasheet"
+"J_in1,J_in_encoder1,J_in_encoder2,J_in_encoder3,J_in_encoder4,J_out1","6","Conn_01x05","","","","Connector_JST:JST_EH_B5B-EH-A_1x05_P2.50mm_Vertical",""
+"U1,U2","2","74HC165","","","","Package_DIP:CERDIP-16_W7.62mm_SideBrazed_LongPads_Socket","https://assets.nexperia.com/documents/data-sheet/74HC_HCT165.pdf"
+"puente1,puente2,puente3,puente4,puente5,puente6","6","0","","","","Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P7.62mm_Horizontal",""
+"R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11,R12","12","10k","","","","Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P7.62mm_Horizontal",""

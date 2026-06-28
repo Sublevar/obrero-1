@@ -83,23 +83,23 @@ El circuito expone dos conectores Molex de 5 pines en la PCB.
 
 ### Conector 1 — entrada de datos serie (DS)
 
-| Pin | Señal | GPIO ESP32 | GPIO ESP32-S3 | Descripción |
-|-----|-------|------------|---------------|-------------|
-| 1   | VCC   | —          | —             | Alimentación |
-| 2   | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
-| 3   | CP    | `gpio23`   | `gpio18`      | Clock Pulse / SPI2 SCLK |
-| 4   | DS    | `gpio2`    | `gpio19`      | Data Serial in / SPI2 MOSI (dummy, no conectado) |
-| 5   | GND   | —          | —             | Tierra |
+| Pin | Color | Señal | GPIO ESP32 | GPIO ESP32-S3 | Descripción |
+|-----|-------|-------|------------|---------------|-------------|
+| 1   | 🔴 Rojo   | VCC   | —          | —             | Alimentación |
+| 2   | 🟢 Verde  | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
+| 3   | ⚪ Blanco | CP    | `gpio23`   | `gpio18`      | Clock Pulse / SPI2 SCLK |
+| 4   | 🩶 Gris   | DS    | `gpio2`    | `gpio4`       | Data Serial in / SPI2 MOSI (dummy, no conectado) |
+| 5   | ⚫ Negro  | GND   | —          | —             | Tierra |
 
 ### Conector 2 — salida de datos serie (Q7)
 
-| Pin | Señal | GPIO ESP32 | GPIO ESP32-S3 | Descripción |
-|-----|-------|------------|---------------|-------------|
-| 1   | VCC   | —          | —             | Alimentación |
-| 2   | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
-| 3   | CP    | `gpio23`   | `gpio18`      | Clock Pulse / SPI2 SCLK |
-| 4   | Q7    | `gpio35`   | `gpio20`      | Salida serie del último shift register / SPI2 MISO |
-| 5   | GND   | —          | —             | Tierra |
+| Pin | Color | Señal | GPIO ESP32 | GPIO ESP32-S3 | Descripción |
+|-----|-------|-------|------------|---------------|-------------|
+| 1   | 🔴 Rojo   | VCC   | —          | —             | Alimentación |
+| 2   | 🟢 Verde  | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
+| 3   | ⚪ Blanco | CP    | `gpio23`   | `gpio18`      | Clock Pulse / SPI2 SCLK |
+| 4   | 🩶 Gris   | Q7    | `gpio35`   | `gpio5`       | Salida serie del último shift register / SPI2 MISO |
+| 5   | ⚫ Negro  | GND   | —          | —             | Tierra |
 
 ## Pines ESP32 usados
 
@@ -108,12 +108,14 @@ El circuito expone dos conectores Molex de 5 pines en la PCB.
 - `gpio2`  → SPI2 MOSI (dummy, no conectado)
 - `gpio35` → SPI2 MISO (QH salida serie)
 
-## Pines ESP32-S3 (propuesta)
+## Pines ESP32-S3
 
 - `gpio10` → LC / SH-!LD latch (PL)
 - `gpio18` → SPI SCLK (CP)
-- `gpio19` → SPI MOSI (DS / dummy)
-- `gpio20` → SPI MISO (Q7)
+- `gpio4`  → SPI MOSI (DS / dummy, no conectado)
+- `gpio5`  → SPI MISO (Q7)
+
+> **Nota**: `gpio19` y `gpio20` son USB D− y D+ en ESP32-S3. No deben usarse para SPI si se necesita monitor serie por USB-CDC.
 
 ## Configuración de encoders
 

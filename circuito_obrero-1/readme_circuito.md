@@ -30,9 +30,14 @@ molex 5 pines
 
 ## Mapeo de señales a GPIO (ESP32 / ESP32-S3)
 
-| Señal | GPIO ESP32 | GPIO ESP32-S3 (propuesta) |
-|-------|------------|--------------------------|
-| PL    | `gpio22`   | `gpio10`                 |
-| CP    | `gpio23`   | `gpio18`                 |
-| DS    | `gpio2`    | `gpio19`                 |
-| Q7    | `gpio35`   | `gpio20`                 |
+| Color | Señal | GPIO ESP32 | GPIO ESP32-S3 |
+|-------|-------|------------|---------------|
+| 🔴 Rojo  | VCC   | —          | —             |
+| 🟢 Verde | PL    | `gpio22`   | `gpio10`      |
+| ⚪ Blanco | CP    | `gpio23`   | `gpio18`      |
+| 🩶 Gris  | DS    | `gpio2`    | `gpio4`       |
+| 🩶 Gris  | Q7    | `gpio35`   | `gpio5`       |
+| ⚫ Negro | GND   | —          | —             |
+
+> **Importante**: en ESP32-S3, `gpio19` y `gpio20` son los pines USB D− y D+ del puerto USB-CDC.
+> Usarlos como SPI desactiva el monitor serie por ese puerto. Usar siempre `gpio4`/`gpio5` u otros GPIOs libres.

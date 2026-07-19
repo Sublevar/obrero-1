@@ -59,6 +59,10 @@ pub enum ClockSource {
 enum Transport {
     Stopped,
     Playing,
+    /// Primer toque de Stop: deja terminar el paso en curso (su gate) y
+    /// no dispara el próximo; el corte final llega cuando no queda nada
+    /// sonando.
+    Stopping,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -128,8 +132,9 @@ impl Engine {
         if src == self.clock_source {
             return;
         }
-        // Cambiar de fuente detiene el transporte para no dejar notas colgadas.
-        self.stop();
+        // Cambiar de fuente no permite seguir tickeando en la fuente vieja
+        // para terminar el paso prolijamente: corte inmediato.
+        self.force_stop();
         self.clock_source = src;
     }
 
@@ -142,8 +147,30 @@ impl Engine {
         self.stop_pending = false;
     }
 
+    /// Primer toque: si hay una nota sonando, la deja terminar su gate y
+    /// no dispara el próximo paso (corte prolijo). Segundo toque mientras
+    /// se está apagando: silencio general inmediato.
     pub fn stop(&mut self) {
-        if self.transport == Transport::Playing || !self.pending_offs.is_empty() {
+        match self.transport {
+            Transport::Stopped => {}
+            Transport::Stopping => self.force_stop(),
+            Transport::Playing => {
+                self.start_pending = false;
+                if self.pending_offs.is_empty() {
+                    self.force_stop();
+                } else {
+                    self.transport = Transport::Stopping;
+                }
+            }
+        }
+    }
+
+    /// Corte inmediato: apaga todo lo que esté sonando ya mismo y envía el
+    /// Stop de transporte (si somos master). Usado por el doble toque de
+    /// Stop y por cualquier cambio que no pueda esperar (p. ej. cambiar la
+    /// fuente de reloj).
+    fn force_stop(&mut self) {
+        if self.transport != Transport::Stopped || !self.pending_offs.is_empty() {
             self.stop_pending = true;
         }
         self.transport = Transport::Stopped;
@@ -252,7 +279,7 @@ impl Engine {
             self.flush_pending_offs(now_us, out);
         }
 
-        if self.clock_source != ClockSource::Internal || self.transport != Transport::Playing {
+        if self.clock_source != ClockSource::Internal || self.transport == Transport::Stopped {
             return;
         }
 
@@ -269,6 +296,14 @@ impl Engine {
             }
             self.on_tick(t as u64, true, out);
             self.next_tick_at = Some(t + self.tick_period_us());
+
+            if self.transport == Transport::Stopping && self.pending_offs.is_empty() {
+                // Ya no queda nada sonando: recién ahora cortamos.
+                self.transport = Transport::Stopped;
+                self.next_tick_at = None;
+                out.push(TimedMidi::realtime(t as u64, MIDI_STOP));
+                break;
+            }
         }
     }
 
@@ -278,7 +313,7 @@ impl Engine {
         if self.stop_pending || self.start_pending {
             return Some(0);
         }
-        if self.clock_source == ClockSource::Internal && self.transport == Transport::Playing {
+        if self.clock_source == ClockSource::Internal && self.transport != Transport::Stopped {
             return self.next_tick_at.map(|t| t as u64);
         }
         None
@@ -309,9 +344,13 @@ impl Engine {
                     self.flush_pending_offs(now_us, out);
                 }
                 MIDI_CLOCK => {
-                    if self.transport == Transport::Playing {
+                    if self.transport != Transport::Stopped {
                         // Como esclavo no re-emitimos 0xF8.
                         self.on_tick(now_us, false, out);
+                        if self.transport == Transport::Stopping && self.pending_offs.is_empty()
+                        {
+                            self.transport = Transport::Stopped;
+                        }
                     }
                 }
                 _ => {}
@@ -323,7 +362,7 @@ impl Engine {
         let tps = self.pattern.ticks_per_step as u32;
         let last_tick = self.tick.saturating_sub(1);
         // Paso global desde Start; cada track lo reduce módulo su propio largo.
-        let global_step = if self.transport == Transport::Playing && self.tick > 0 {
+        let global_step = if self.transport != Transport::Stopped && self.tick > 0 {
             Some((last_tick / tps) as usize)
         } else {
             None
@@ -340,7 +379,7 @@ impl Engine {
                 .unwrap_or(0),
         );
         ViewModel {
-            playing: self.transport == Transport::Playing,
+            playing: self.transport != Transport::Stopped,
             bpm: self.bpm,
             external_clock: self.clock_source == ClockSource::External,
             single_channel: match self.pattern.channel_mode {
@@ -396,15 +435,19 @@ impl Engine {
             }
         });
 
-        self.note_buf.clear();
-        self.pattern.events_at(tick, &mut self.note_buf);
-        for ev in &self.note_buf {
-            out.push(TimedMidi::note_on(at_us, ev.channel, ev.note, ev.velocity));
-            self.pending_offs.push(PendingOff {
-                due_tick: tick + ev.gate_ticks as u32,
-                channel: ev.channel,
-                note: ev.note,
-            });
+        // En modo Stopping no se dispara el próximo paso: solo se dejan
+        // terminar las notas ya en curso.
+        if self.transport == Transport::Playing {
+            self.note_buf.clear();
+            self.pattern.events_at(tick, &mut self.note_buf);
+            for ev in &self.note_buf {
+                out.push(TimedMidi::note_on(at_us, ev.channel, ev.note, ev.velocity));
+                self.pending_offs.push(PendingOff {
+                    due_tick: tick + ev.gate_ticks as u32,
+                    channel: ev.channel,
+                    note: ev.note,
+                });
+            }
         }
 
         self.tick = tick + 1;

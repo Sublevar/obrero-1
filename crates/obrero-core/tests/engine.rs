@@ -113,7 +113,36 @@ fn pattern_loops_every_16_steps() {
 }
 
 #[test]
-fn stop_emits_fc_and_flushes_hanging_notes() {
+fn stop_lets_current_step_finish_its_gate_before_cutting() {
+    let mut e = Engine::new();
+    // gate corto (3 ticks); track 1 también dispara en el paso 1 para
+    // comprobar que, tras el Stop, ese próximo paso NO suena.
+    e.toggle_step(0, 0);
+    e.toggle_step(0, 1);
+    let mut out = Vec::new();
+    e.play();
+    e.advance(0, 0, &mut out); // dispara el paso 0 (nota 60, gate 3 ticks)
+    assert!(notes(&out).iter().any(|(_, s, _, _)| *s == 0x90));
+
+    out.clear();
+    e.stop(); // primer toque: no corta ya, deja terminar el paso en curso
+    e.advance(20_000, 100_000, &mut out);
+    // El corte llega recién cuando se apaga la nota colgada (gate 3 ticks
+    // ≈ 62500 µs), no antes.
+    assert!(out.iter().any(|ev| ev.bytes[0] == MIDI_STOP));
+    let offs: Vec<_> = notes(&out)
+        .into_iter()
+        .filter(|(_, s, _, _)| *s == 0x80)
+        .collect();
+    assert_eq!(offs.len(), 1);
+    assert_eq!(offs[0].2, 60);
+    // El paso 1 (tick siguiente) nunca dispara: el Stop lo previno.
+    assert!(!out.iter().any(|ev| ev.bytes[0] == 0x90));
+    assert!(!e.view().playing);
+}
+
+#[test]
+fn double_stop_forces_immediate_silence() {
     let mut e = Engine::new();
     // gate larguísimo para que la nota quede colgada
     e.pattern_mut().tracks[0].steps[0].on = true;
@@ -124,7 +153,9 @@ fn stop_emits_fc_and_flushes_hanging_notes() {
     assert!(notes(&out).iter().any(|(_, s, _, _)| *s == 0x90));
 
     out.clear();
-    e.stop();
+    e.stop(); // primer toque: entra en modo "apagando"
+    assert!(e.view().playing); // sigue sonando mientras termina el paso
+    e.stop(); // segundo toque: silencio general ya
     e.advance(60_000, 0, &mut out);
     assert_eq!(out[0].bytes[0], MIDI_STOP);
     assert_eq!(out[0].at_us, 60_000);
@@ -134,6 +165,7 @@ fn stop_emits_fc_and_flushes_hanging_notes() {
         .collect();
     assert_eq!(offs.len(), 1);
     assert_eq!(offs[0].2, 60);
+    assert!(!e.view().playing);
 }
 
 #[test]

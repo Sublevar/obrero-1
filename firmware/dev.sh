@@ -9,6 +9,7 @@ set -euo pipefail
 
 MODEL="esp32s3" # debe coincidir con el target de .cargo/config.toml (esp32 | esp32s3)
 PORT=""
+FEATURES=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -19,6 +20,10 @@ while [[ $# -gt 0 ]]; do
     -p|--puerto)
       PORT="$2"
       shift 2
+      ;;
+    -raw)
+      FEATURES="logging-encoders-raw"
+      shift
       ;;
     *)
       shift
@@ -36,7 +41,12 @@ if [[ -z "$PORT" ]]; then
   exit 1
 fi
 
-cargo build
+if [[ -n "$FEATURES" ]]; then
+  echo "[dev.sh] compilando con features: $FEATURES"
+  cargo build --features "$FEATURES"
+else
+  cargo build
+fi
 
 espflash flash --port "$PORT" "target/xtensa-${MODEL}-espidf/debug/obrero-1"
 

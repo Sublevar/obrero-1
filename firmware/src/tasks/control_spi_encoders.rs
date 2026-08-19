@@ -26,8 +26,7 @@ pub unsafe extern "C" fn control_spi_encoders(_: *mut core::ffi::c_void) {
     .unwrap();
 
     let spi_config = SpiConfig::new().baudrate(Hertz(1_000_000));
-    let mut spi =
-        SpiDeviceDriver::new(driver, Option::<AnyIOPin>::None, &spi_config).unwrap();
+    let mut spi = SpiDeviceDriver::new(driver, Option::<AnyIOPin>::None, &spi_config).unwrap();
 
     loop {
         // Pulso LOW en LC: latch entradas paralelas

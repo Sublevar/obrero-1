@@ -3,7 +3,8 @@ mod tasks;
 
 use esp_idf_svc::hal::delay::FreeRtos;
 use esp_idf_svc::sys::xTaskCreatePinnedToCore;
-use std::ffi::CString;fn main() -> anyhow::Result<()> {
+use std::ffi::CString;
+fn main() -> anyhow::Result<()> {
     //codigo que partchea RUST para operar en ESP32
     esp_idf_svc::sys::link_patches();
 
@@ -23,7 +24,6 @@ use std::ffi::CString;fn main() -> anyhow::Result<()> {
         );
     }
 
-   
     unsafe {
         xTaskCreatePinnedToCore(
             Some(tasks::task1),
@@ -36,7 +36,6 @@ use std::ffi::CString;fn main() -> anyhow::Result<()> {
         );
     }
 
-   
     loop {
         FreeRtos::delay_ms(30_000);
         println!("[main] alive");
@@ -52,7 +51,7 @@ use std::ffi::CString;fn main() -> anyhow::Result<()> {
     //         1,
     //     );
     // }
-    
+
     //    unsafe {
     //     xTaskCreatePinnedToCore(
     //         Some(tasks::task3),
@@ -64,15 +63,12 @@ use std::ffi::CString;fn main() -> anyhow::Result<()> {
     //         0,
     //     );
     // }
-    
+
     // loop {
     //     println!("Hello From Main");
     //     FreeRtos::delay_ms(500);
     // }
 }
-
-
-
 
 // use esp_idf_svc::hal::delay::FreeRtos;
 // use esp_idf_svc::sys::xTaskCreatePinnedToCore;

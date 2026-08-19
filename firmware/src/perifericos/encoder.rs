@@ -36,17 +36,21 @@ impl Encoder {
     where
         F: FnMut(i32, bool),
     {
-        let cw_edge  = cw  && !self.prev_cw;
+        let cw_edge = cw && !self.prev_cw;
         let ccw_edge = ccw && !self.prev_ccw;
 
-        if cw_edge  { self.turns += 1; }
-        if ccw_edge { self.turns -= 1; }
+        if cw_edge {
+            self.turns += 1;
+        }
+        if ccw_edge {
+            self.turns -= 1;
+        }
 
         if cw_edge || ccw_edge || btn {
             callback(self.turns, btn);
         }
 
-        self.prev_cw  = cw;
+        self.prev_cw = cw;
         self.prev_ccw = ccw;
     }
 }
@@ -61,14 +65,14 @@ pub const DEBUG_BTN: bool = false;
 pub fn update_encoders_from_bits(encoders: &mut [Encoder], bits: u32) {
     // (cw_bit, ccw_bit, btn_bit) — ver layout en doc del módulo
     const LAYOUT: [(u32, u32, u32); 4] = [
-        ( 2,  3,  1), // enc1: chip1 C(CW)/D(CCW)/B(BTN)
-        ( 4,  5,  6), // enc2: chip1 E(CW)/F(CCW)/G(BTN)
-        (10, 11,  9), // enc3: chip2 C(CW)/D(CCW)/B(BTN)
+        (2, 3, 1),    // enc1: chip1 C(CW)/D(CCW)/B(BTN)
+        (4, 5, 6),    // enc2: chip1 E(CW)/F(CCW)/G(BTN)
+        (10, 11, 9),  // enc3: chip2 C(CW)/D(CCW)/B(BTN)
         (12, 13, 14), // enc4: chip2 E(CW)/F(CCW)/G(BTN)
     ];
 
     for (i, &(cw_bit, ccw_bit, btn_bit)) in LAYOUT.iter().enumerate().take(encoders.len()) {
-        let cw  = (bits >> cw_bit)  & 1 == 1;
+        let cw = (bits >> cw_bit) & 1 == 1;
         let ccw = (bits >> ccw_bit) & 1 == 1;
         let btn = (bits >> btn_bit) & 1 == 1;
 
@@ -76,7 +80,11 @@ pub fn update_encoders_from_bits(encoders: &mut [Encoder], bits: u32) {
             if !pressed || DEBUG_BTN {
                 println!(
                     "[enc{}] turns={:+}  btn={}  cw={}  ccw={}",
-                    i + 1, turns, pressed, cw, ccw
+                    i + 1,
+                    turns,
+                    pressed,
+                    cw,
+                    ccw
                 );
             }
         });

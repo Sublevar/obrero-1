@@ -18,11 +18,7 @@ fn main() {
         }
     });
 
-    let count: usize = count_raw
-        .as_deref()
-        .unwrap_or("8")
-        .parse()
-        .unwrap_or(8);
+    let count: usize = count_raw.as_deref().unwrap_or("8").parse().unwrap_or(8);
 
     if count == 0 || count > 8 {
         panic!("ENCODER_COUNT must be between 1 and 8, got {}", count);

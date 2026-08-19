@@ -1,6 +1,4 @@
 use esp_idf_svc::hal::delay::FreeRtos;
-use esp_idf_svc::hal::gpio::{Gpio34, Gpio35, PinDriver, Pull};
-use esp_idf_svc::hal::peripherals::Peripherals;
 use esp_idf_svc::sys::{esp_timer_get_time, xTaskCreatePinnedToCore};
 use std::ffi::CString;
 

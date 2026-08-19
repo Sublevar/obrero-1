@@ -347,8 +347,7 @@ impl Engine {
                     if self.transport != Transport::Stopped {
                         // Como esclavo no re-emitimos 0xF8.
                         self.on_tick(now_us, false, out);
-                        if self.transport == Transport::Stopping && self.pending_offs.is_empty()
-                        {
+                        if self.transport == Transport::Stopping && self.pending_offs.is_empty() {
                             self.transport = Transport::Stopped;
                         }
                     }

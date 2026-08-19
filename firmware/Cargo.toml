@@ -53,3 +53,11 @@ anyhow = "1.0.100"
 
 [build-dependencies]
 embuild = "0.33"
+
+# USB-MIDI por el puerto USB nativo (GPIO19/20) via TinyUSB.
+# Solo compila en chips con USB-OTG (S2/S3) — para buildear el ESP32 clásico
+# hay que comentar este bloque. v1.x es la línea que usan los ejemplos de IDF 5.3.
+[[package.metadata.esp-idf-sys.extra_components]]
+remote_component = { name = "espressif/esp_tinyusb", version = "^1.1" }
+bindings_header = "src/tinyusb_bindings.h"
+bindings_module = "tinyusb"

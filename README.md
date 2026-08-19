@@ -54,6 +54,7 @@ source ~/export-esp.sh   # agregar al perfil de shell
 cargo install espflash
 
 cd firmware
+<<<<<<< HEAD
 cargo build      # primera build descarga ESP-IDF en .embuild/ — tarda
 ./dev.sh         # build + flash + monitor serial
 =======
@@ -61,6 +62,30 @@ cargo build      # primera build descarga ESP-IDF en .embuild/ — tarda
 ./dev.sh
 ```
 
+=======
+cargo build              # primera build descarga ESP-IDF en .embuild/ — tarda
+./dev.sh                 # build + flash + monitor por el conector UART del devkit
+./dev.sh -p /dev/ttyUSB1 # elegir puerto serie a mano
+./dev.sh -m esp32        # flashear el binario de la board ESP32 clásica
+```
+
+`dev.sh -m` solo elige qué directorio de target flashear — el chip compilado lo define `.cargo/config.toml`.
+
+### USB-MIDI + debug serial (dos cables)
+
+El firmware S3 levanta TinyUSB (componente `espressif/esp_tinyusb`, ver
+`Cargo.toml` y `CONFIG_TINYUSB_MIDI_COUNT` en `sdkconfig.defaults`) sobre el
+puerto **USB nativo** (GPIO19/20), que enumera como dispositivo USB-MIDI.
+Los logs y el flasheo van por el conector **UART** (bridge USB-UART → UART0),
+así que conviene tener ambos cables conectados: `dev.sh` flashea y monitorea
+solo por `/dev/ttyUSB*` y deja el `/dev/ttyACM*` (USB nativo) libre para MIDI.
+
+Al usar USB-OTG se pierde el USB-Serial-JTAG del puerto nativo (comparten PHY);
+el debug queda en el conector UART. TinyUSB no compila para el ESP32 clásico
+(no tiene USB-OTG): para ese chip hay que comentar el bloque
+`extra_components` en `firmware/Cargo.toml`.
+
+>>>>>>> e3618c6 (fmt)
 Flasheo manual según target activo:
 
 ```sh

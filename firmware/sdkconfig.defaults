@@ -1,6 +1,13 @@
 # Rust often needs a bit of an extra main task stack size compared to C (the default is 3K)
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8000
 
+# USB-MIDI (TinyUSB) por el puerto USB nativo. Una interfaz MIDI de dispositivo.
+CONFIG_TINYUSB_MIDI_COUNT=1
+
+# Consola/logs por UART0 (conector "UART" del devkit), explícito para que no
+# compita con TinyUSB por el puerto USB nativo. Es el default de ESP-IDF.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+
 # Use this to set FreeRTOS kernel tick frequency to 1000 Hz (100 Hz by default).
 # This allows to use 1 ms granularity for thread sleeps (10 ms by default).
 #CONFIG_FREERTOS_HZ=1000

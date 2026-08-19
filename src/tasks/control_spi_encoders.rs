@@ -1,4 +1,3 @@
-use embedded_hal::spi::SpiDevice as _;
 use esp_idf_svc::hal::delay::FreeRtos;
 use esp_idf_svc::hal::gpio::{AnyIOPin, PinDriver};
 use esp_idf_svc::hal::peripherals::Peripherals;
@@ -7,7 +6,7 @@ use esp_idf_svc::hal::spi::{
 };
 use esp_idf_svc::hal::units::Hertz;
 
-pub unsafe extern "C" fn lectoras(_: *mut core::ffi::c_void) {
+pub unsafe extern "C" fn control_spi_encoders(_: *mut core::ffi::c_void) {
     let peripherals = Peripherals::take().unwrap();
 
     // LC / SH-!LD: pulso LOW → latch entradas paralelas, luego HIGH

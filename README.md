@@ -85,21 +85,21 @@ El circuito expone dos conectores Molex de 5 pines en la PCB.
 
 | Pin | Color | Señal | GPIO ESP32 | GPIO ESP32-S3 | Descripción |
 |-----|-------|-------|------------|---------------|-------------|
-| 1   | 🔴 Rojo   | VCC   | —          | —             | Alimentación |
-| 2   | 🟢 Verde  | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
+| 5   | 🔴 Rojo   | VCC   | —          | —             | Alimentación |
+| 4   | 🟢 Verde  | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
 | 3   | ⚪ Blanco | CP    | `gpio23`   | `gpio18`      | Clock Pulse / SPI2 SCLK |
-| 4   | 🩶 Gris   | DS    | `gpio2`    | `gpio4`       | Data Serial in / SPI2 MOSI (dummy, no conectado) |
-| 5   | ⚫ Negro  | GND   | —          | —             | Tierra |
+| 2   | 🩶 Gris   | DS    | `gpio2`    | `gpio4`       | Data Serial in / SPI2 MOSI (dummy, no conectado) |
+| 1   | ⚫ Negro  | GND   | —          | —             | Tierra |
 
 ### Conector 2 — salida de datos serie (Q7)
 
 | Pin | Color | Señal | GPIO ESP32 | GPIO ESP32-S3 | Descripción |
 |-----|-------|-------|------------|---------------|-------------|
-| 1   | 🔴 Rojo   | VCC   | —          | —             | Alimentación |
-| 2   | 🟢 Verde  | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
+| 5   | 🔴 Rojo   | VCC   | —          | —             | Alimentación |
+| 4   | 🟢 Verde  | PL    | `gpio22`   | `gpio10`      | Parallel Load / SH-!LD (latch de entradas) |
 | 3   | ⚪ Blanco | CP    | `gpio23`   | `gpio18`      | Clock Pulse / SPI2 SCLK |
-| 4   | 🩶 Gris   | Q7    | `gpio35`   | `gpio5`       | Salida serie del último shift register / SPI2 MISO |
-| 5   | ⚫ Negro  | GND   | —          | —             | Tierra |
+| 2   | 🩶 Gris   | Q7    | `gpio35`   | `gpio5`       | Salida serie del último shift register / SPI2 MISO |
+| 1   | ⚫ Negro  | GND   | —          | —             | Tierra |
 
 ## Pines ESP32 usados
 

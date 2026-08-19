@@ -20,6 +20,7 @@ opt-level = "z"
 [features]
 default = []
 
+logging-encoders-raw = []
 experimental = ["esp-idf-svc/experimental"]
 
 [dependencies]

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /// Encoder rotativo con botón central.
 ///
 /// Hardware: 2× 74HC165 en cadena, desplazando QH primero (MSB del byte).

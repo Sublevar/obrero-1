@@ -1,0 +1,30 @@
+[build]
+target = "xtensa-esp32s3-espidf"
+
+[target.xtensa-esp32s3-espidf]
+linker = "ldproxy"
+runner = "espflash flash --monitor"
+rustflags = [ "--cfg",  "espidf_time64"]
+
+[unstable]
+build-std = ["std", "panic_abort"]
+
+[env]
+MCU="esp32s3"
+# Note: this variable is not used by the pio builder (`cargo build --features pio`)
+ESP_IDF_VERSION = "v5.3.3"
+# esp-idf-sys's own bindings.h (src/include/esp-idf/bindings.h) already
+# `#include "tinyusb.h"` unconditionally, ahead of our src/tinyusb_bindings.h.
+# Its include guard means our own defines in tinyusb_bindings.h arrive too
+# late for bindgen. The real CMake/GCC build passes -DCFG_TUSB_MCU=901
+# (OPT_MCU_ESP32S3, see tusb_option.h) as a private compile flag when
+# building the tinyusb component's own sources, but that flag never reaches
+# bindgen's clang invocation. Without it TinyUSB can't tell it's on an
+# Espressif MCU, so it: falls back to `#include "FreeRTOS.h"` (no
+# "freertos/" prefix, unresolvable) and picks the non-Espressif spinlock
+# path, which calls taskENTER_CRITICAL()/taskEXIT_CRITICAL() without the
+# mux argument ESP-IDF v5.3's SMP FreeRTOS requires. Passing it here on the
+# command line applies before any header is processed, regardless of
+# include order.
+BINDGEN_EXTRA_CLANG_ARGS = "-DCFG_TUSB_MCU=901"
+

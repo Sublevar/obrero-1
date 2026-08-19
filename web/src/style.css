@@ -1,0 +1,250 @@
+:root {
+  color-scheme: dark;
+  font-family: "Chivo", system-ui, sans-serif;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+}
+
+body {
+  margin: 0;
+  background: #161616;
+  color: #eee;
+  display: flex;
+  justify-content: center;
+}
+
+#app {
+  padding: 2rem;
+  max-width: 900px;
+}
+
+h1 {
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  margin-bottom: 0;
+}
+
+.tagline {
+  color: #888;
+  font-style: italic;
+  margin-top: 0.3rem;
+  margin-bottom: 1.5rem;
+}
+
+.transport,
+.devices {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+button {
+  background: #2a2a2a;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #383838;
+}
+
+#play.active {
+  background: #1f6f3f;
+  border-color: #2f9f5f;
+}
+
+input[type="number"],
+select {
+  background: #2a2a2a;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 0.3rem;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 1.5rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.track-head,
+.track-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Los tiles warpean cuando no entran en el ancho disponible */
+.cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.label {
+  width: 90px;
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.channel {
+  width: 70px;
+  margin-right: 6px;
+  font-size: 0.8rem;
+}
+
+.note {
+  width: 52px;
+  margin-right: 6px;
+  font-size: 0.8rem;
+}
+
+.cell {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 4px;
+  background: #242424;
+  border: 1px solid #3a3a3a;
+}
+
+.cell.beat {
+  border-color: #555;
+}
+
+.cell.on {
+  background: #c84;
+  border-color: #ea6;
+}
+
+.cell.playhead {
+  outline: 2px solid #6cf;
+  outline-offset: -2px;
+}
+
+/* En modo euclidiano la grilla solo muestra la secuencia generada */
+.cell.locked {
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.gear {
+  margin-left: 8px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.mute {
+  margin-right: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.mute.active {
+  background: #a33;
+  border-color: #d55;
+}
+
+.config {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+  align-items: center;
+}
+
+/* display:inline-flex pisa el display:none que el navegador le da a [hidden] */
+.config[hidden] {
+  display: none;
+}
+
+.config select {
+  font-size: 0.8rem;
+}
+
+.config label {
+  font-size: 0.8rem;
+  color: #aaa;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.euclid-param {
+  width: 52px;
+  font-size: 0.8rem;
+}
+
+.status {
+  margin-top: 1rem;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+/* ── Teléfonos ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  #app {
+    padding: 1rem 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .label {
+    width: auto;
+    min-width: 56px;
+  }
+
+  .grid {
+    gap: 14px;
+  }
+
+  .row {
+    row-gap: 6px;
+  }
+
+  select,
+  input[type="number"] {
+    max-width: 9rem;
+  }
+
+  .config {
+    flex-wrap: wrap;
+  }
+}
+
+/* Targets táctiles más generosos */
+@media (pointer: coarse) {
+  .cell {
+    width: 40px;
+    height: 40px;
+  }
+
+  button {
+    min-height: 38px;
+  }
+}

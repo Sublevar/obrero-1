@@ -14,9 +14,29 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  rust-checks:
-    name: Rust Checks
+  core-checks:
+    name: Core + WASM (stable)
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Enable caching
+        uses: Swatinem/rust-cache@v2
+      - name: Test core
+        run: cargo test --workspace --all-features
+      - name: Build WASM
+        run: cargo build -p obrero-wasm --target wasm32-unknown-unknown
+
+  firmware-checks:
+    name: Firmware (xtensa)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: firmware
     strategy:
       fail-fast: false
       matrix:
@@ -38,5 +58,7 @@ jobs:
           ldproxy: true
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: firmware
       - name: Run command
         run: cargo ${{ matrix.action.command }} ${{ matrix.action.args }}

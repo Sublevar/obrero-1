@@ -1,0 +1,9 @@
+# Archivos de historial y backups de KiCad
+.history/
+*-backups/
+*.kicad_pcb-bak
+*.kicad_sch-bak
+
+# Archivos de caché y configuración local
+fp-info-cache
+*.kicad_prl

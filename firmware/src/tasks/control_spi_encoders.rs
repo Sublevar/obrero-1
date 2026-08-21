@@ -9,6 +9,7 @@ use esp_idf_svc::hal::units::Hertz;
 pub unsafe extern "C" fn control_spi_encoders(_: *mut core::ffi::c_void) {
     let peripherals = Peripherals::take().unwrap();
 
+    // Latch Control
     // LC / SH-!LD: pulso LOW → latch entradas paralelas, luego HIGH
     // ESP32-S3: gpio10 → PL (LC)
     let mut lc = PinDriver::output(peripherals.pins.gpio10).unwrap();

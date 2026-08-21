@@ -26,8 +26,8 @@ fn main() -> anyhow::Result<()> {
 
     unsafe {
         xTaskCreatePinnedToCore(
-            Some(tasks::task1),
-            CString::new("Task 1").unwrap().as_ptr(),
+            Some(tasks::reloj_debug),
+            CString::new("reloj_debug").unwrap().as_ptr(),
             4096,
             std::ptr::null_mut(),
             5,

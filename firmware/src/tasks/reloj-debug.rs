@@ -1,7 +1,7 @@
 use esp_idf_svc::sys::esp_timer_get_time;
 
 #[allow(dead_code)]
-pub unsafe extern "C" fn task3(_: *mut core::ffi::c_void) {
+pub unsafe extern "C" fn reloj_debug(_: *mut core::ffi::c_void) {
     let start_time = esp_timer_get_time();
 
     loop {
@@ -18,14 +18,12 @@ pub unsafe extern "C" fn task3(_: *mut core::ffi::c_void) {
         let seconds = total_seconds % 60;
         let milliseconds = total_ms % 1000;
 
-        println!("Task 3 - Current Time:");
+        println!("Reloj Debug - Current Time:");
         println!("  Microsegundos totales: {}", elapsed_us);
         println!("  Milisegundos totales: {}", total_ms);
         println!(
             "  Tiempo formateado: {:02}:{:02}:{:02}.{:03}",
             hours, minutes, seconds, milliseconds
         );
-
-        //FreeRtos::delay_ms(100);
     }
 }

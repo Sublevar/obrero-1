@@ -38,10 +38,10 @@ pub unsafe extern "C" fn control_spi_encoders(_: *mut core::ffi::c_void) {
         match spi.read(&mut buf) {
             Ok(_) => {
                 let bits = u16::from_be_bytes(buf);
-                println!("[spi] {:016b}", bits);
+                eprintln!("[spi] {:016b}", bits);
             }
             Err(e) => {
-                println!("[spi] error de lectura: {:?}", e);
+                eprintln!("[spi] error de lectura: {:?}", e);
             }
         }
 

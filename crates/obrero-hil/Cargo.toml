@@ -1,0 +1,20 @@
+[package]
+name = "obrero-hil"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+publish = false
+authors = [
+    "Pablo Labarta <pablitolabarta@gmail.com>",
+    "Santiago Fernandez <stfg.prof@gmail.com>",
+]
+
+[dependencies]
+obrero-core = { path = "../obrero-core" }
+anyhow = "1.0"
+midir = "0.10"
+serialport = "4"
+
+[[bin]]
+name = "obrero-hil-list-ports"
+path = "src/bin/list_ports.rs"

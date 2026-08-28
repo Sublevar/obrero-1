@@ -1,5 +1,5 @@
 [workspace]
 resolver = "2"
-members = ["crates/obrero-core", "crates/obrero-wasm"]
+members = ["crates/obrero-core", "crates/obrero-wasm", "crates/obrero-hil"]
 # El firmware ESP32 se compila aparte con su propio toolchain (esp/xtensa) — ver firmware/
 exclude = ["firmware"]

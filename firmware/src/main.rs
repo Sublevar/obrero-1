@@ -36,9 +36,25 @@ fn main() -> anyhow::Result<()> {
         );
     }
 
+    unsafe {
+        xTaskCreatePinnedToCore(
+            Some(tasks::midi_din),
+            CString::new("midi_din").unwrap().as_ptr(),
+            4096,
+            std::ptr::null_mut(),
+            5,
+            std::ptr::null_mut(),
+            0,
+        );
+    }
+
     loop {
         FreeRtos::delay_ms(30_000);
-        println!("[main] alive");
+        // `println!` (stdout) queda bufferizado y nunca flushea en este target
+        // — nada de lo que se imprima con él llega jamás a la consola en un
+        // programa que no termina. `eprintln!` (stderr) no bufferiza. Ver
+        // firmware/src/tasks/midi_din.rs y demás tareas: mismo criterio.
+        eprintln!("[main] alive");
     }
     // unsafe {
     //     xTaskCreatePinnedToCore(

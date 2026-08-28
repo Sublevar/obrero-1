@@ -78,7 +78,7 @@ pub fn update_encoders_from_bits(encoders: &mut [Encoder], bits: u32) {
 
         encoders[i].update_with(cw, btn, ccw, |turns, pressed| {
             if !pressed || DEBUG_BTN {
-                println!(
+                eprintln!(
                     "[enc{}] turns={:+}  btn={}  cw={}  ccw={}",
                     i + 1,
                     turns,

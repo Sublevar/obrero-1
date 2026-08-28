@@ -18,10 +18,10 @@ pub unsafe extern "C" fn task3(_: *mut core::ffi::c_void) {
         let seconds = total_seconds % 60;
         let milliseconds = total_ms % 1000;
 
-        println!("Task 3 - Current Time:");
-        println!("  Microsegundos totales: {}", elapsed_us);
-        println!("  Milisegundos totales: {}", total_ms);
-        println!(
+        eprintln!("Task 3 - Current Time:");
+        eprintln!("  Microsegundos totales: {}", elapsed_us);
+        eprintln!("  Milisegundos totales: {}", total_ms);
+        eprintln!(
             "  Tiempo formateado: {:02}:{:02}:{:02}.{:03}",
             hours, minutes, seconds, milliseconds
         );

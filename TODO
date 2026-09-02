@@ -1,0 +1,6 @@
+
+# TODO:
+
+- no implementar midi bajar una lib   
+    https://github.com/kovaxis/midly/tree/master
+    Alternativa: https://github.com/sourcebox/midi-stream-parser-rs 

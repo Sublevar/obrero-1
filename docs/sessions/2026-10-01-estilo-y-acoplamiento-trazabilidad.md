@@ -26,6 +26,8 @@
 
 10. **Dependencias actuales ratificadas** (decisión humana, stfg.prof), incluidas las `0.x`: `wasm-bindgen 0.2`, `serde-wasm-bindgen 0.6`, `log 0.4`, `esp-idf-svc 0.51`, `embuild 0.33` y `dotenvy 0.15`. Solo se migran si una sesión posterior lo decide porque hay una opción mejor. Pedido literal: "las dependencias actuales quedan ratificadas a menos que en una sesión posterior se decida migrarlas de haber mejores opciones".
 
+11. **`std` en la web: evitar los casos problemáticos, permitir solo excepcionalmente (`CLAUDE.md` §1).** `std` existe en `wasm32-unknown-unknown` pero es parcial: tiempo real, hilos, `fs`/`net`/`process` fallan en runtime y `Mutex`/canales solo valen para un hilo. Se prohíben en código web. Un uso excepcional de `std` exige que sea útil y viable en ESP32-S3 y web, fuera del core `no_std`, con cada API comprobada en runtime y justificada en la sesión. Pedido literal: "evitar los casos problemáticos y solo permitir en casos excepcionales donde sea útil y viable std".
+
 ## Queda abierto
 
 - El hook ve cualquier cambio en el working tree, incluidos los de una persona hechos a mano durante la sesión: Claude los tiene que registrar como "cambio ajeno detectado". Si resulta molesto, una alternativa es registrar el estado al inicio de la sesión con un hook `SessionStart` y comparar contra eso.
@@ -49,3 +51,4 @@
 9. **Señalado `serde` con `std` en `obrero-core`** — archivos: `docs/INDEX.md` (§5). Por qué: viola la regla recién explicitada; se señala, no se corrige.
 10. **Vuelven a ser 5 pilares; "Dependencias" pasa a §1** — archivos: `CLAUDE.md`, `docs/INDEX.md` (§5, referencia). Por qué: corrección del usuario.
 11. **Dependencias actuales ratificadas** — archivos: `CLAUDE.md` (§1 Dependencias), `docs/INDEX.md` (sale de §5). Por qué: decisión humana.
+12. **`CLAUDE.md` §1: casos problemáticos de `std` en web prohibidos; uso excepcional condicionado** — archivos: `CLAUDE.md`. Por qué: pedido del usuario, tras aclarar qué partes de `std` fallan en `wasm32-unknown-unknown`.

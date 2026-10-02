@@ -80,3 +80,4 @@ Una fila por acto de un agente que modificó archivos, agregada en el mismo paso
 | 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 9. Señalado `serde` con `std` en `obrero-core` (§5) | `docs/INDEX.md` |
 | 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 10. Vuelven a ser 5 pilares: "Dependencias" pasa a subsección de §1 (coherencia lógica) | `CLAUDE.md`, `docs/INDEX.md` |
 | 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 11. Dependencias actuales ratificadas por decisión humana; sale de §5 | `CLAUDE.md`, `docs/INDEX.md` |
+| 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 12. `CLAUDE.md` §1: `std` problemático en web prohibido, uso excepcional condicionado | `CLAUDE.md` |

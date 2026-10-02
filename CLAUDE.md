@@ -15,7 +15,12 @@ Cinco pilares que este archivo sostiene: coherencia lógica, estilo de código, 
 
 - El core (`crates/obrero-core`) es **sans-io**: no hace threads, no lee timers reales, no hace I/O. Las plataformas (web, firmware) le empujan tiempo (`advance(now, lookahead)`) y le dan los bytes a enviar. Cualquier cambio que tiente a leer un reloj real o abrir un socket/puerto *dentro* de `crates/obrero-core` está rompiendo esa frontera — va en la plataforma, no en el core.
 - **Todo tiene que ser compatible con ESP32-S3 y con web.** La misma lógica corre en los dos targets, así que el código compartido (`crates/obrero-core` y cualquier código que consuman ambas plataformas) es `no_std`: solo `core`, y `alloc` cuando haga falta heap.
-- **No se usa `std` si no es compatible con los dos targets.** Que compile no alcanza: en `wasm32-unknown-unknown`, `std::time::Instant`, `std::thread`, `std::fs` y `std::net` compilan pero fallan en runtime. Solo la capa de plataforma (`obrero-wasm`, `firmware/`) puede tocar APIs propias de su target, y únicamente para hacer de frontera (I/O, tiempo real). La lógica no va ahí.
+- **`std` es parcial en `wasm32-unknown-unknown`: se evita.** Existe, pero buena parte compila y falla en runtime. Está prohibido en cualquier código que corra en la web:
+  - tiempo real: `Instant::now()` y `SystemTime::now()` entran en panic. El tiempo lo empuja la plataforma (ver sans-io arriba);
+  - hilos: `thread::spawn` falla. En la web no hay hilos sin Web Workers + `SharedArrayBuffer` + nightly, y nada del repo los usa;
+  - `fs`, `net`, `process`: devuelven `Unsupported`;
+  - `Mutex`, `RwLock` y canales: compilan, pero solo valen como si hubiera un único hilo. No se confía en ellos para sincronizar nada.
+- **Uso excepcional de `std`:** solo si es útil y viable en los dos targets a la vez, y siempre fuera del core `no_std` (en la capa de plataforma o detrás de una feature opcional que el core no activa por defecto). Antes de usarlo, Claude comprueba que cada API concreta funciona en runtime en `xtensa-esp32s3` y en `wasm32-unknown-unknown`, no solo que compila, y deja la justificación en la bitácora de la sesión. Ante la duda, `core`/`alloc`. Las APIs propias de un solo target (p. ej. hilos en el firmware, que sí tiene FreeRTOS) solo en la capa de plataforma de ese target, como frontera.
 - El resto de `obrero-core` todavía no es `no_std`: es deuda conocida (ver `docs/INDEX.md` §5), no una licencia para agregar más.
 - Un cambio a un concepto compartido (Clock, Pattern, Midi, ViewModel) se refleja en todos sus consumidores (bindings wasm, UI web, firmware) o se documenta explícitamente como diferido — no se deja a medio migrar sin decirlo.
 

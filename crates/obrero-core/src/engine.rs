@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::input::{Button, InputEvent};
 use crate::midi::MidiParser;
 use crate::pattern::{ChannelMode, NoteEvent, Pattern, StepMode, PPQN};

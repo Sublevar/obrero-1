@@ -1,3 +1,8 @@
+mod clock;
+mod time;
+
+pub use clock::{WasmClock, WasmDebugTap, WasmSubscription};
+
 use obrero_core::engine::{Engine, TimedMidi};
 use obrero_core::pattern::Step;
 use obrero_core::{ChannelMode, ClockSource};

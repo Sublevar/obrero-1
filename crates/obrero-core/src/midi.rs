@@ -1,3 +1,6 @@
+use alloc::format;
+use alloc::string::{String, ToString};
+
 enum ParseState {
     Idle,
     Data1 { status: u8 },
@@ -70,7 +73,7 @@ impl Default for MidiParser {
     }
 }
 
-pub fn format_midi_msg(status: u8, d1: u8, d2: u8) -> std::string::String {
+pub fn format_midi_msg(status: u8, d1: u8, d2: u8) -> String {
     let ch = (status & 0x0F) + 1;
     match status & 0xF0 {
         0x80 => format!("Note Off    ch={:2} note={:3} vel={:3}", ch, d1, d2),
@@ -114,6 +117,8 @@ pub fn format_midi_msg(status: u8, d1: u8, d2: u8) -> std::string::String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec;
+    use alloc::vec::Vec;
 
     fn parse_all(bytes: &[u8]) -> Vec<(u8, u8, u8)> {
         let mut p = MidiParser::new();

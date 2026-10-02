@@ -1,3 +1,6 @@
+use alloc::vec;
+use alloc::vec::Vec;
+
 /// Resolución interna: 24 ticks por negra (= MIDI clock).
 pub const PPQN: u32 = 24;
 
@@ -22,9 +25,14 @@ pub enum StepMode {
 /// E(k, n) por aritmética modular: el paso i golpea si (i·k) mod n < k.
 /// Equivale a Bjorklund: E(3,8) = x..x..x. (tresillo), E(5,8) = x.x.xx.x.
 pub fn euclidean_hits(pulses: u8, steps: u8) -> impl Iterator<Item = bool> {
-    let k = pulses as u32;
     let n = steps.max(1) as u32;
-    (0..n).map(move |i| (i * k) % n < k)
+    (0..n).map(move |i| euclidean_hit(i, pulses as u32, n))
+}
+
+/// Paso `i` de E(pulses, steps), consultable de a uno.
+pub const fn euclidean_hit(i: u32, pulses: u32, steps: u32) -> bool {
+    let n = if steps == 0 { 1 } else { steps };
+    (i * pulses) % n < pulses
 }
 
 #[derive(Clone, Debug)]

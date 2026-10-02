@@ -1,4 +1,4 @@
-import init, { WasmEngine } from "./pkg/obrero_wasm";
+import init, { WasmClock, WasmEngine } from "./pkg/obrero_wasm";
 import { initMidi, listInputs, listOutputs, selectInput, selectOutput } from "./midi";
 import { sendAll, startScheduler } from "./scheduler";
 import { Ui, type ViewModel } from "./ui";
@@ -10,6 +10,10 @@ async function main(): Promise<void> {
   await init();
   const engine = new WasmEngine();
   const root = document.querySelector<HTMLElement>("#app")!;
+
+  if (new URLSearchParams(location.search).has("clockdebug")) {
+    startClockDebug();
+  }
 
   let devices: Awaited<ReturnType<typeof initMidi>> | null = null;
 
@@ -59,6 +63,19 @@ async function main(): Promise<void> {
     requestAnimationFrame(draw);
   };
   requestAnimationFrame(draw);
+}
+
+// Observer del Clock nuevo, independiente del Engine hasta su migración.
+// Expuesto en `window.obreroClock` para cambiar bpm/subdivisión desde la consola.
+function startClockDebug(): void {
+  const clock = new WasmClock(120);
+  const tap = clock.debug_tap(4);
+  (window as unknown as { obreroClock: WasmClock }).obreroClock = clock;
+  window.setInterval(() => {
+    clock.advance(100);
+    const lost = tap.poll();
+    if (lost > 0) console.warn(`[clock] ${lost} avisos perdidos`);
+  }, 25);
 }
 
 main();

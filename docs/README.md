@@ -1,6 +1,11 @@
 # docs/ — cómo se escriben los documentos
 
-La documentación y los tutoriales de obrero-1 los escriben humanxs. Los agentes de IA solo escriben trazabilidad (`docs/INDEX.md` y `docs/sessions/`) — ver `CLAUDE.md` §4–§5.
+Acá conviven dos cosas distintas (ver `CLAUDE.md` §4):
+
+- **Especificaciones** (`specs/`, `docs/product/`, `docs/engineering/`): descripciones técnicas. Se actualizan junto con cada cambio aprobado que las impacte, también cuando el cambio lo hace un agente de IA.
+- **Documentación y tutoriales**: todavía no existen. Los van a escribir humanxs.
+
+La trazabilidad (`docs/INDEX.md`, `docs/sessions/`) la mantiene quien hace el cambio, persona o agente.
 
 ## Dónde va cada cosa
 
@@ -20,7 +25,7 @@ Documentos en `docs/product/` y `docs/engineering/` llevan autoría de rol + fec
 **obrero-1, <alcance>.** Author: <rol>, <fecha>. Status: <proposal | agreed baseline | ready for execution>.
 ```
 
-Ver `firmware-mvp-0.md`, `timeline-view-design-spec.md`. En `specs/` el encabezado es libre, pero se recomienda el mismo.
+Ver `firmware-mvp-0.md`, `timeline-view-design-spec.md`. En `specs/` el encabezado es libre, pero se recomienda el mismo. Al actualizar una spec por un cambio aprobado, se actualizan también su fecha y su estado.
 
 Un plan en `docs/engineering/` referencia explícitamente su spec fuente con la fecha/estado de ese spec.
 

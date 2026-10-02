@@ -1,8 +1,10 @@
 # Clock / Observer — Time, Bpm, Clock, Sequencer, Debug
 
-**obrero-1, core (`crates/obrero-core`).** Status: diseño cerrado, implementación pendiente (próxima sesión). Reemplaza el borrador anterior de este mismo archivo — ese borrador quedaba con frases cortadas ("los clocks se derivan de leer el ___") y tensiones sin resolver (Time singleton vs. Bpm múltiple); esta versión las resuelve explícitamente en la sección 7.
+**obrero-1, core (`crates/obrero-core`).** Fecha: 2026-10-01. Status: implementado (primera iteración) en `crates/obrero-core/src/clock.rs`, con binding web en `crates/obrero-wasm/src/clock.rs`. `Engine` todavía no lo usa.
 
-Sesión que originó este documento: `docs/sessions/2026-10-01-clock-observer-design.md` (qué se leyó, qué se decidió, qué queda abierto).
+Sesiones:
+- `docs/sessions/2026-10-01-clock-observer-design.md`: diseño.
+- `docs/sessions/2026-10-01-clock-implementacion.md`: implementación, y correcciones al diseño aprobadas durante ella (§11).
 
 ---
 
@@ -11,165 +13,135 @@ Sesión que originó este documento: `docs/sessions/2026-10-01-clock-observer-de
 Separa lo que hoy vive fusionado dentro de `Engine` (`engine.rs`) en piezas independientes:
 
 - **`Time`**: una marca temporal monotónica, un singleton por programa corriendo.
-- **`Bpm`**: tempo + conversión tiempo real ⇄ ticks musicales, uno por `Clock`.
-- **`Clock`**: el Observer — lee `Time`, avanza su propio contador de ticks según su `Bpm`, y lleva una tabla de suscripciones con subdivisión configurable.
-- **`Sequencer`**: contrato (no implementación) para quien consume ticks de una suscripción y produce MIDI.
-- **`Debug`**: un consumidor más, que traduce ticks a bar/beat y los emite a un sink inyectable.
+- **`TimeSource`**: la fachada para leer el reloj real. Cada plataforma tiene su implementación.
+- **`Bpm`**: tempo en centésimas, uno por `Clock`.
+- **`Clock`**: el Observer. Lee `Time`, genera ticks base con su instante exacto según su `Bpm`, y lleva una tabla de suscripciones con subdivisión configurable.
+- **`Sequencer`**: contrato (no implementación) para quien consume los avisos de una suscripción y produce MIDI.
+- **`Debug`**: un consumidor más, que traduce avisos a bar/beat y los emite a un sink inyectable.
 
-Esto habilita lo que pedía el enunciado original: varios secuenciadores colgados del mismo `Clock` con subdivisiones distintas pero un único bpm, y deja la puerta abierta (sin construirla todavía) a varios `Clock` en el futuro.
+Esto habilita lo que pedía el enunciado original: varios secuenciadores colgados del mismo `Clock`, con subdivisiones distintas y un único bpm. Deja la puerta abierta, sin construirla todavía, a varios `Clock`.
 
 ## 1. Decisiones de arquitectura (el "por qué" antes del "qué")
 
-1. **Modelo pull, no push.** El `Clock` nunca ejecuta código ajeno dentro de su propio tick. En cada tick base, lo único que hace por cada suscripción debida es incrementar un contador `pending`. El consumidor (`Sequencer`, `Debug`) lee ese contador cuando *a él* lo hacen avanzar — no al revés. Un Observer clásico (push: el Subject llama directamente al método del Observer) tiene problemas conocidos para este caso: bloquea al Subject si un observer tarda, puede causar reentrancia/deadlock, y normalmente pide guardar callbacks como `Box<dyn FnMut>` — heap, inaceptable en el camino caliente de un `no_std` que corre en ESP32 durante horas. El modelo pull evita los tres problemas y es, de hecho, el que ya insinuaba el pseudocódigo original de este archivo (`ClockSubscription::get_pending()` + `Seq::advance` que lo consulta).
-2. **`Time` es el singleton real, no `Clock`.** Una sola marca temporal monotónica en microsegundos por programa corriendo, sin ninguna noción musical (sin bpm, sin subdivisión, sin bar). La crea una vez el punto de entrada de cada plataforma (la web o el firmware) y la alimenta empujando el valor que lee del reloj real (`performance.now()`, `esp_timer_get_time()`). Es singleton *por construcción* — un solo punto de creación, pasada por referencia hacia abajo — no un `static` de Rust (eso complicaría testear en host y pediría `unsafe` o un lock).
-3. **`Bpm` es por instancia de `Clock`, no global.** Esto resuelve la tensión del borrador original ("Time es singleton" vs. "puede haber múltiples Bpm"): cada `Clock` (hoy uno; a futuro varios) tiene su propio `Bpm`, todos anclados a la misma `Time`. `Clock::set_bpm` es la operación de "cambiar bpm global" del enunciado — global al `Clock`, no a todo el programa.
-4. **Subdivisión flexible por default; modo precisión opt-in.** Se explica en la sección 3.
-5. **Auto-desuscripción vía `Drop`, no una macro.** El enunciado pedía "algún macro" para que al eliminarse el objeto suscriptor se desuscriba solo. Rust ya da esto gratis con el trait `Drop` — es exactamente el mecanismo que la literatura de Observer llama "destructor unregisters", la solución estándar al *lapsed listener problem*. No hace falta inventar nada.
-6. **Sin `async`/`await`.** El borrador original pedía "Async" como requisito. Se interpreta como "no bloqueante", no como `async fn`: un executor es una dependencia que `no_std`/ESP32 no necesita acá, y el modelo pull ya es no bloqueante por construcción.
+1. **Modelo pull, no push.** El `Clock` nunca ejecuta código ajeno dentro de su propio tick. En cada tick base, lo único que hace por cada suscripción debida es encolar un aviso `Notice { tick, at_us }`. El consumidor lo retira cuando *a él* lo hacen avanzar.
+   Un Observer push tiene problemas conocidos para este caso: bloquea al Subject si un observer tarda, puede causar reentrancia o deadlock, y suele pedir callbacks `Box<dyn FnMut>` (heap en el camino caliente de un `no_std` que corre horas en ESP32).
+   El aviso lleva el **instante exacto** del tick, no solo un conteo. La web programa los eventos 100 ms adelante, así que sin ese instante el jitter sería el del pump (~25 ms).
+2. **`Time` es el singleton real, no `Clock`.** Una sola marca temporal monotónica en µs por programa, sin noción musical. La crea una vez el punto de entrada de cada plataforma y la alimenta con lo que lee su `TimeSource`. Es singleton por construcción (un solo punto de creación, pasada por referencia), no un `static`.
+3. **Fachada `TimeSource` para leer el reloj; aritmética única en el core.** Cada plataforma implementa `TimeSource` de la forma más eficiente que tenga:
+   - `WebTime`: `performance.now()`;
+   - `EspTime`: `esp_timer_get_time()`, pendiente;
+   - en los tests, un valor controlado.
 
-## 2. A) `Time`
+   El cálculo de cuándo cae cada tick no tiene variantes por plataforma: es uno solo, entero (§3), para que web y hardware se comporten igual.
+4. **`Bpm` es por instancia de `Clock`, no global.** Cada `Clock` tiene su propio `Bpm`, y todos se anclan a la misma `Time`. `Clock::set_bpm` es el "cambiar bpm global" del enunciado: global al `Clock`, no al programa.
+5. **Subdivisión flexible por default; modo precisión opt-in.** Ver §3.
+6. **Auto-desuscripción vía `Drop`, con la suscripción co-poseyendo el clock por `Rc`.** Rust ya da el "destructor unregisters" con `Drop`, sin macro.
+   La suscripción guarda un `Rc<Clock>`, no un `&'clock Clock`. Un préstamo con lifetime no puede cruzar a JS (wasm-bindgen no admite lifetimes) ni convivir con el `Clock` dentro de un mismo struct. Con `Rc` no hay lifetime, y en JS el `.free()` de la suscripción dispara el `Drop`.
+   Límite: `Rc` es de un solo hilo. En la web siempre lo es; en ESP32, una task por clock. Si hiciera falta compartirlo entre tasks, se pasa a `Arc`.
+7. **Sin `async`/`await`.** "Async" en el enunciado se interpreta como "no bloqueante": el modelo pull ya lo es, sin executor.
+
+## 2. A) `Time` y `TimeSource`
 
 ```rust
-pub struct Time {
-    now_us: u64,
+pub trait TimeSource {
+    fn now_us(&self) -> u64;
 }
 
+pub struct Time { now_us: u64 }
+
 impl Time {
-    pub const fn new() -> Self {
-        Self { now_us: 0 }
-    }
-
-    /// La plataforma empuja el valor que lee de su reloj real. Satura hacia
-    /// adelante: un timestamp que llega retrasado (jitter de la fuente) no
-    /// hace retroceder el tiempo global.
-    pub fn advance(&mut self, now_us: u64) {
-        self.now_us = now_us.max(self.now_us);
-    }
-
-    pub fn now_us(&self) -> u64 {
-        self.now_us
-    }
+    pub const fn new() -> Self;
+    /// Satura hacia adelante: un valor atrasado no hace retroceder el tiempo.
+    pub fn advance(&mut self, now_us: u64);
+    pub fn now_us(&self) -> u64;
 }
 ```
 
-Dueño: el punto de entrada de cada plataforma (uno solo — `main.rs` en firmware, el bootstrap de `web/src/main.ts` vía `WasmEngine` en la web). Se pasa por `&Time` a cuantos `Clock` la necesiten leer. `Time` no sabe que existe `Clock`: es deliberadamente la pieza más chica y más tonta de todo el diseño.
+Uso en cada pump de la plataforma: `time.advance(source.now_us()); clock.advance(&time, lookahead_us);`.
 
 ## 3. B) `Bpm` y `Subdivision`
 
 ```rust
-pub struct Bpm(f32); // clamp [MIN_BPM, MAX_BPM] — reusa las constantes de engine.rs
+/// Centésimas de bpm (12000 = 120.00), clamp a [MIN_BPM, MAX_BPM] de engine.rs.
+pub struct Bpm(u32);
+
+impl Bpm {
+    pub const fn from_centi(centi: u32) -> Self;
+    pub fn from_f32(bpm: f32) -> Self; // NaN → mínimo
+}
 
 pub enum Subdivision {
-    /// n avisos repartidos lo más parejo posible dentro de un bar. 1..=24.
+    /// n avisos por bar. 1..=24.
     PerBar(u8),
-    /// 1 aviso cada n bars. 1..=8.
+    /// 1 aviso cada n bars, al inicio del bar. 1..=8.
     EveryNBars(u8),
 }
 ```
 
-Dos variantes porque "subdivisión" cubre dos direcciones distintas del mismo eje: más rápido que un bar (`PerBar`, el ejemplo del enunciado es 1/24) y más lento que un bar (`EveryNBars`, el ejemplo es 8). No es la misma recta numérica — por eso no es una sola fracción.
+**Tiempo exacto, entero.** El instante del tick `n` es `ancla_us + (n − ancla_tick) · 6·10⁹ / (centi_bpm · 24)`, calculado en `u128`.
+- No acumula error: cada tick se calcula desde el ancla, no sumando un período redondeado.
+- Da el mismo resultado bit a bit en xtensa (ESP32-S3 no tiene FPU de 64 bits; `f64` se emularía por software) y en wasm.
+- Cambiar el bpm crea un ancla nueva en el próximo tick todavía no generado: los ticks ya emitidos dentro del lookahead conservan su instante.
 
-**Límites:** `PerBar` tope en 24 porque coincide con el PPQN que ya usa `engine.rs` (24 ticks por negra): `PerBar(24)` es la resolución más fina que el motor puede dar hoy sin cambiar su reloj base. `EveryNBars` tope en 8 por el ejemplo del enunciado; no hay una razón técnica para no permitir más — es un límite de producto, ajustable.
+**Dos variantes** porque "subdivisión" cubre dos direcciones del mismo eje: más rápido que un bar (`PerBar`) y más lento (`EveryNBars`).
 
-**Resolución de `PerBar(n)` a ticks base:** asumiendo 4/4, un bar = `PPQN × 4 = 96` ticks base. Si `n` divide 96 exacto, los avisos quedan equiespaciados sin ambigüedad. Si no (p. ej. `PerBar(7)`, 96/7 ≈ 13.71), hay dos modos:
+**Alineación al compás.** `hits(tick)` es un predicado puro sobre el tick base: tick 0 = inicio del bar 0, y un bar = `PPQN × 4 = 96` ticks (4/4). Dos suscripciones con la misma subdivisión avisan en los mismos ticks, sin importar cuándo se suscribieron.
 
-- **Flexible (default):** se reusa `euclidean_hits(k, n)` — ya en `pattern.rs`, la misma distribución tipo Bjorklund que usan los ritmos euclidianos — para decidir en qué tick base cae cada uno de los `n` avisos dentro de los 96 ticks del bar. Es entera (sin `f32`/`f64`, apta para `no_std`), determinística y sin deriva acumulada entre bares; el costo es que los intervalos entre avisos consecutivos pueden variar en ±1 tick base (≈0.8 ms a 120 bpm) en vez de ser todos idénticos.
-- **Precisión (opt-in, `Clock::set_precision_mode(bool)`):** en vez de aceptar cualquier `n`, lo **snapea** al divisor exacto de 96 más cercano dentro de `{1,2,3,4,6,8,12,16,24}`. Nunca falla (no rechaza), pero el `n` efectivo puede no ser el pedido — `subscribe`/`set_subdivision` devuelven el valor resuelto para que el caller lo sepa.
+**Resolución de `PerBar(n)`:**
+- **Flexible (default):** reparto `E(n, 96)` con `euclidean_hit` (`pattern.rs`), la misma fórmula de los ritmos euclidianos. Es entera y determinística. Los intervalos entre avisos pueden variar en ±1 tick base: con `PerBar(7)`, 13 o 14 ticks.
+- **Precisión (opt-in, `Clock::set_precision_mode(bool)`):** ajusta `n` al divisor exacto de 96 más cercano dentro de `{1,2,3,4,6,8,12,16,24}`; ante empate, al menor. Nunca rechaza. El valor efectivo se informa (`Subscription::subdivision`, `set_subdivision`). Cambiar el modo re-resuelve todas las suscripciones vivas desde lo que pidió cada una.
 
-`EveryNBars(n)` no tiene este problema nunca: `n × 96` siempre es entero.
+`EveryNBars(n)` siempre es exacto. Una subdivisión fuera de rango da `ClockError::OutOfRange`.
+
+**Límites.** El tope de `EveryNBars` (8) es de producto. El de `PerBar` (24) viene del diseño original; ver §10 sobre ampliarlo.
 
 ## 4. C) `Clock` (el Observer) y `Subscription`
 
-### 4.1 Por qué `&self` y no `&mut self`
+### 4.1 Mutabilidad interior
 
-Toda la API pública de `Clock` — incluido `advance` — usa `&self`, nunca `&mut self`. No es estilo, es necesidad: `Subscription<'clock>` guarda una referencia compartida `&'clock Clock` (puede haber varias vivas a la vez, una por secuenciador suscripto), y la plataforma necesita poder seguir llamando `clock.advance(&time)` en cada pump mientras esas `Subscription` siguen vivas en otros lados del programa. Si `advance` pidiera `&mut Clock`, el borrow checker no dejaría que ninguna `Subscription` siguiera viva al mismo tiempo — sería incompatible con tener secuenciadores de larga vida suscriptos.
+Toda la API de `Clock` usa `&self`: lo comparten la plataforma y cada `Subscription` (vía `Rc`). El estado mutable vive en `Cell`/`RefCell` (en `core`, sin `unsafe`).
 
-La solución: todo el estado mutable de `Clock` vive detrás de `Cell`/`RefCell` (ambos en `core`, sin pedir `alloc`). Tanto la plataforma como cada `Subscription` acceden vía `&Clock` compartido. Es el patrón estándar para "un objeto de un solo hilo, con mutabilidad interior, prestado por muchos lados a la vez" — sin `unsafe` y sin necesitar `Rc` (nadie necesita *poseer* el `Clock`; todos lo prestan desde donde vive, una sola vez, en la plataforma).
+`advance` es lo único que toma el `RefCell` de los slots, y mientras lo tiene no ejecuta código ajeno. Por eso el borrow del `Drop` de una `Subscription` nunca falla por reentrancia. Igual se usa `try_borrow_mut` + `debug_assert!`: un bug salta en los tests sin provocar un panic en producción.
 
 ### 4.2 Forma
 
 ```rust
-pub const MAX_SUBS: usize = 32; // cubre el "al menos 20" del enunciado con margen
+pub const MAX_SUBS: usize = 32;
+pub const NOTICE_CAPACITY: usize = 16; // por suscripción
+pub const MAX_CATCHUP_US: u64 = 1_000_000;
 
-struct Slot {
-    subdivision: Subdivision,
-    interval_ticks: u32, // resuelto una vez al suscribirse / al cambiar subdivisión
-    pending: u32,        // cuenta saturante: ticks debidos desde el último take_pending()
-    generation: u32,
-}
-
-pub struct Clock {
-    bpm: Cell<Bpm>,
-    precision_mode: Cell<bool>,
-    tick: Cell<u64>,                 // contador de ticks base (24 PPQN) desde el arranque
-    next_tick_at_us: Cell<Option<u64>>,
-    slots: RefCell<[Option<Slot>; MAX_SUBS]>,
-    next_generation: Cell<u32>,
-}
+pub struct Notice { pub tick: u64, pub at_us: u64 }
 
 impl Clock {
-    pub fn new(bpm: Bpm) -> Self { /* ... */ }
-
-    /// Lee `time.now_us()`, avanza el contador de ticks según el período que
-    /// da el bpm actual, y por cada tick base vencido marca `pending += 1` en
-    /// cada slot cuyo intervalo calza. "Notificar a los grupos de cada tipo
-    /// de subdivisión" es exactamente esto: no hay una estructura de
-    /// agrupación separada — agrupar es que varios slots compartan el mismo
-    /// intervalo resuelto y se marquen en el mismo tick.
-    pub fn advance(&self, time: &Time) { /* ... */ }
-
-    /// "Cambiar bpm global" (global al Clock, no al programa — ver §1.3).
-    pub fn set_bpm(&self, bpm: Bpm) { self.bpm.set(bpm); }
-
-    pub fn bpm(&self) -> Bpm { self.bpm.get() }
-
-    pub fn set_precision_mode(&self, on: bool) { self.precision_mode.set(on); }
-
-    /// Busca un slot libre en los MAX_SUBS; si no hay, falla explícito en vez
-    /// de crecer dinámicamente (no hay alloc).
-    pub fn subscribe(&self, subdivision: Subdivision) -> Result<Subscription<'_>, ClockFull> { /* ... */ }
-
-    /// Para Debug (§6): el contador de ticks base crudo.
-    pub fn tick(&self) -> u64 { self.tick.get() }
+    pub fn new(bpm: Bpm) -> Rc<Clock>;
+    /// Genera los ticks con instante <= now + lookahead y encola avisos.
+    /// La primera llamada (o la primera tras `reset`) ancla el tick 0 en `now`.
+    pub fn advance(&self, time: &Time, lookahead_us: u64);
+    pub fn set_bpm(&self, bpm: Bpm);
+    pub fn bpm(&self) -> Bpm;
+    pub fn set_precision_mode(&self, on: bool);
+    /// Tick 0 en el próximo advance; descarta avisos pendientes.
+    pub fn reset(&self);
+    pub fn tick(&self) -> u64;
+    pub fn skipped_ticks(&self) -> u64;
+    pub fn subscribe(self: &Rc<Self>, s: Subdivision) -> Result<Subscription, ClockError>;
 }
 
-pub struct Subscription<'clock> {
-    clock: &'clock Clock,
-    index: usize,
-    generation: u32,
+impl Subscription {
+    /// Mueve los avisos a `out`; devuelve los perdidos por ring lleno.
+    pub fn take(&self, out: &mut Vec<Notice>) -> u32;
+    pub fn subdivision(&self) -> Subdivision; // efectiva
+    pub fn set_subdivision(&self, s: Subdivision) -> Result<Subdivision, ClockError>;
+    pub fn unsubscribe(self);
 }
-
-impl<'clock> Subscription<'clock> {
-    /// Lee y resetea a 0 el contador pending del slot. Devuelve cuántos
-    /// ticks de esta subdivisión se acumularon desde la última lectura —
-    /// nunca se pierde un paso aunque el consumidor lea más lento que los
-    /// ticks (mismo principio que `pending_offs` ya usa en engine.rs).
-    pub fn take_pending(&self) -> u32 { /* ... */ }
-
-    /// Re-resuelve `interval_ticks` para la nueva subdivisión. Devuelve el
-    /// valor efectivo aplicado (puede diferir del pedido en modo precisión).
-    pub fn set_subdivision(&self, new: Subdivision) -> Result<Subdivision, SubscriptionError> { /* ... */ }
-
-    /// "Eliminar suscripción" explícita, para quien no quiera esperar al Drop.
-    pub fn unsubscribe(self) { /* consume self; el Drop de abajo hace el trabajo */ }
-}
-
-impl<'clock> Drop for Subscription<'clock> {
-    /// Satisface el requisito de "al eliminarse el objeto suscriptor, se
-    /// desuscribe solo" — ver §1.5. `try_borrow_mut` en vez de `borrow_mut`:
-    /// un panic dentro de un Drop (p. ej. durante un unwind) es peor que
-    /// simplemente no liberar el slot esa vez.
-    fn drop(&mut self) {
-        if let Ok(mut slots) = self.clock.slots.try_borrow_mut() {
-            if let Some(slot) = &slots[self.index] {
-                if slot.generation == self.generation {
-                    slots[self.index] = None;
-                }
-            }
-        }
-    }
-}
+// Drop: libera el slot si su `generation` coincide.
 ```
+
+**Garantías de fiabilidad:**
+- **Ring fijo por suscripción, sin heap en el camino caliente.** Si se llena, el aviso nuevo se descarta y se cuenta; `take` devuelve cuántos se perdieron. Nunca se pierde en silencio. 16 avisos alcanzan si el consumidor lee en cada pump: en 100 ms a 300 bpm hay como mucho 12 ticks base.
+- **Tabla llena:** `ClockError::Full`. No crece dinámicamente.
+- **Atraso grande** (pestaña dormida, laptop suspendida): si `now` supera el próximo tick por más de `MAX_CATCHUP_US`, el clock salta hacia adelante sobre la misma grilla, en vez de emitir una ráfaga de ticks vencidos, y lo suma a `skipped_ticks()`.
+- **Slots con `generation`:** un handle viejo nunca libera ni lee un slot reusado.
 
 ### 4.3 Operaciones del enunciado, mapeadas
 
@@ -178,81 +150,101 @@ impl<'clock> Drop for Subscription<'clock> {
 | Crear un clock | `Clock::new(bpm)` |
 | Suscribirte a un clock, con subdivisión | `Clock::subscribe(subdivision)` |
 | Cambiar subdivisión de una suscripción | `Subscription::set_subdivision(new)` |
-| Desuscribirte | `Subscription::unsubscribe()` explícito, o automático al Drop |
-| Notificar a los grupos de cada subdivisión | Dentro de `Clock::advance`, ver comentario en §4.2 |
+| Desuscribirte | `Subscription::unsubscribe()`, o automático al Drop (`.free()` en JS) |
+| Notificar a los grupos de cada subdivisión | Dentro de `Clock::advance`: los slots con la misma subdivisión reciben aviso en el mismo tick |
 | Cambiar bpm global | `Clock::set_bpm(bpm)` |
-| Obtener mensajes/ticks pendientes | `Subscription::take_pending()` |
+| Obtener mensajes/ticks pendientes | `Subscription::take(out)`, con instante exacto |
 
-## 5. D) `Sequencer` — contrato, implementación diferida
-
-No se toca `Engine`/`Pattern`/el parser MIDI actual en esta sesión — el enunciado pidió explícitamente dejar ese refactor para después. Lo único que se fija ahora es el contrato que cualquier secuenciador deberá cumplir para colgarse de un `Clock`:
+## 5. D) `Sequencer`: contrato, implementación diferida
 
 ```rust
 pub trait Sequencer {
-    fn on_ticks(&mut self, ticks: u32, out: &mut Vec<TimedMidi>);
+    fn on_notices(&mut self, notices: &[Notice], out: &mut Vec<TimedMidi>);
 }
 ```
 
-Uso esperado, del lado de la plataforma, por cada secuenciador suscripto:
+Uso esperado en la plataforma, por cada secuenciador suscripto: `sub.take(&mut buf); seq.on_notices(&buf, out);`.
 
-```rust
-if let Some(n) = NonZeroU32::new(sub.take_pending()) {
-    seq.on_ticks(n.get(), out);
-}
-```
-
-Esto habilita D) tal como lo pide el enunciado: varios `Sequencer` colgados del mismo `Clock`, cada uno con su propia `Subscription`/subdivisión, compartiendo un único `Bpm` (el del `Clock`). `Vec<TimedMidi>` en la firma es deliberado: es la misma forma que ya usa `Engine::advance(now, lookahead, out)` hoy — el refactor futuro de `Engine` para implementar este trait no debería tener que cambiar cómo emite eventos, solo de dónde saca el conteo de ticks.
-
-**Fuera de alcance acá, explícitamente para después:** la migración de `Engine` para que implemente `Sequencer`; el reemplazo del parser MIDI casero (`midi.rs`) por una librería externa — ambos mencionados en el enunciado como trabajo posterior, no de esta sesión.
+Cada aviso trae su `at_us`, así que el secuenciador estampa sus `TimedMidi` con el instante exacto del tick, igual que hoy `Engine::advance`. `Engine` todavía no implementa este contrato.
 
 ## 6. E) `Debug`
 
 ```rust
-pub struct TimeMark {
-    pub bar: u32,
-    pub beat: u8,
-    pub tick_in_beat: u8,
-    pub at_us: u64,
-}
+pub struct TimeMark { pub bar: u32, pub beat: u8, pub tick_in_beat: u8, pub at_us: u64 }
 
-/// El core nunca llama `println!`/`std::io` directo — rompería `no_std`.
-/// Cada plataforma inyecta su propio sink.
-pub trait DebugSink {
-    fn emit(&mut self, mark: TimeMark);
+/// El core no llama `println!`: cada plataforma inyecta su sink.
+pub trait DebugSink { fn emit(&mut self, mark: TimeMark); }
+
+/// Consumidor con su propia Subscription; traduce avisos a TimeMark (4/4).
+pub struct DebugTap { /* … */ }
+impl DebugTap {
+    pub fn new(clock: &Rc<Clock>, s: Subdivision) -> Result<Self, ClockError>;
+    pub fn poll(&mut self, sink: &mut impl DebugSink) -> u32; // perdidos
 }
 ```
 
-`Debug` se suscribe como cualquier otro consumidor (tiene su propia `Subscription`, típicamente `PerBar(1)` para una marca por bar, o más fino si se quiere ver subdivisiones), y en cada `take_pending() > 0` traduce `clock.tick()` a bar/beat/tick-in-beat (asumiendo 4/4 — ver §7) y lo empuja al `DebugSink` inyectado.
+Sinks:
+- tests de host: un `Vec<TimeMark>`;
+- web: `console.log` (`WasmDebugTap`; con `?clockdebug` en la URL lo activa `web/src/main.ts`);
+- ESP32: `log::info!` sobre UART0, pendiente.
 
-Sinks esperados por plataforma: en tests de host, uno que junta todo en un `Vec<TimeMark>` para assertions; en la web, uno que hace `console.log`; en ESP32, uno que hace `log::info!` sobre UART0 (ya existe ese canal, ver `docs/product/usb-midi-hardware.md`).
+## 7. Plataforma web (`crates/obrero-wasm`)
 
-## 7. Preguntas que quedaban abiertas en el borrador original, resueltas acá
+- `WebTime`: `TimeSource` sobre `performance.now()`, con un binding a mano de wasm-bindgen (sin `web-sys`, que es 0.x).
+- `WasmClock`: tiene el `Rc<Clock>`, su `Time` y su `WebTime`. `advance(lookahead_ms)` lee el reloj real.
+- `WasmSubscription`: `take()` devuelve `[tick, at_ms] * N` como `Float64Array`, `lost()` informa los perdidos, y `.free()` desuscribe.
+- El `Clock` de la web es independiente del reloj interno del `Engine` hasta que se migre.
 
-- **"Time es un singleton... los clocks se derivan de leer el ___"** (frase cortada en el original): se completa en §1.2 — los `Clock` derivan de leer `Time`, no la poseen.
-- **"Bpm puede haber múltiples" vs. "1 único bpm o clock preciso por instancia de observer"**: no son contradictorios una vez que `Bpm` vive en el `Clock`, no en `Time` — ver §1.3.
-- **"Requisitos: Async"**: resuelto como "no bloqueante" vía el modelo pull, sin `async/await` — ver §1.6.
-- **"Algún macro" para auto-desuscripción**: resuelto con `Drop` — ver §1.5.
-- **Time signature**: fijo en 4/4 para esta versión (afecta `ticks_per_bar = 96` en §3 y el cálculo de bar/beat en §6). Es una simplificación deliberada para no bloquear el resto del diseño, no un límite permanente — queda en "fuera de alcance" abajo.
+## 8. Preguntas que quedaban abiertas en el borrador original, resueltas
 
-## 8. Fuera de alcance (explícitamente, para no perderlo)
+- **"Time es un singleton… los clocks se derivan de leer el ___"**: los `Clock` derivan de leer `Time`, no la poseen (§1.2).
+- **"Bpm puede haber múltiples" vs. "1 único bpm por instancia de observer"**: no se contradicen si `Bpm` vive en el `Clock` (§1.4).
+- **"Requisitos: Async"**: no bloqueante vía modelo pull (§1.7).
+- **"Algún macro" para auto-desuscripción**: `Drop` (§1.6).
+- **Time signature**: fijo en 4/4 en esta versión (96 ticks por bar, §3 y §6).
 
-- Implementación real en `crates/obrero-core` — próxima sesión.
-- Migración `no_std` del resto del crate (hoy `engine.rs`/`pattern.rs` compilan contra `std` sin declararlo — ver `docs/INDEX.md` §5). El código nuevo de este spec debe nacer `no_std`-limpio; retrofittear el resto es trabajo aparte.
-- Múltiples `Clock` simultáneos — el diseño ya no lo impide (cada uno con su `Bpm`, todos podrían leer la misma `Time`), pero no se construye en esta sesión.
-- Reemplazo de `midi.rs` por una librería externa (parte de D, diferido).
-- Bindings JS de la superficie pública (`wasm-bindgen`) — igual que en el borrador original, queda como placeholder hasta que haya implementación.
+## 9. Fuera de alcance (explícitamente, para no perderlo)
+
+- Migrar `Engine` para que consuma `Clock` e implemente `Sequencer`. Lo sacaría además de su reloj `f64`.
+- `EspTime` y uso del core en el firmware (el firmware todavía no linkea `obrero-core`, a propósito: MVP-0).
+- Múltiples `Clock` simultáneos: el diseño no lo impide, pero no se construye.
+- Reemplazo de `midi.rs` por una librería externa.
 - Time signatures distintas de 4/4.
 
-## 9. Plan de testing (una vez implementado)
+## 10. Mejoras propuestas, no aprobadas
 
-- **Precisión/deriva**: análogo a `no_drift_over_simulated_minutes` (`crates/obrero-core/tests/engine.rs`), pero sobre `Subscription::take_pending()` — correr minutos simulados y verificar que el conteo acumulado de ticks por subdivisión no se desvía del esperado.
-- **Escala**: `MAX_SUBS` (32) suscripciones simultáneas, mezclando `PerBar`/`EveryNBars`, verificar que todas reciben su `pending` correcto en el mismo `advance`.
-- **Ciclo de vida**: el `Drop` de una `Subscription` libera su slot; la suscripción número `MAX_SUBS + 1` falla antes de liberar una, y funciona después de que se libera una.
-- **Modo precisión**: `PerBar(n)` con `n` no divisor de 96 se resuelve al divisor esperado cuando el modo está activo, y a la distribución euclidiana cuando no.
+Se listan para decidir; no se da por hecha su utilidad.
 
-## 10. Próximos pasos
+- **`PerBar` hasta 96.** El tope de 24 se justificó por el PPQN, pero `PerBar(24)` equivale a un aviso cada 4 ticks; la resolución más fina posible es `PerBar(96)`.
+- **Start/stop de transporte en `Clock`.** Hoy solo hay `reset`; el transporte sigue en `Engine`.
+- **Seguir clock MIDI externo (0xF8) desde `Clock`.** Hoy lo hace `Engine`.
 
-1. Implementar A–C en `crates/obrero-core` (nuevo módulo, p. ej. `clock.rs`), con los tests de §9.
-2. Confirmar que compila `no_std` (añadir el check a CI, ver `.github/workflows/rust_ci.yml`).
-3. Refactorizar `Engine` para implementar el contrato `Sequencer` (D) — sesión separada.
-4. `Debug` (E) con al menos un sink de host para tests, antes de pensar en los sinks de plataforma.
+## 11. Cambios respecto del diseño original (aprobados en la implementación)
+
+| Diseño original | Implementado | Por qué |
+|---|---|---|
+| `Subscription<'clock>` con `&'clock Clock` | `Subscription` con `Rc<Clock>`; `Clock::new` devuelve `Rc<Clock>` | Exponer a JS y poder guardar clock y suscripciones juntos (§1.6) |
+| `pending: u32` + `take_pending()` | Ring de `Notice { tick, at_us }` + `take(out) -> perdidos` | Instante exacto por tick para el lookahead de la web (§1.1) |
+| `Bpm(f32)` | `Bpm(u32)` en centésimas, aritmética `u128` | Exacto y sin deriva; sin FPU de 64 bits en ESP32-S3 (§3) |
+| `Time` alimentado directo por la plataforma | `Time` + fachada `TimeSource` por plataforma | Lectura eficiente por target con un solo contrato (§1.3) |
+| `Sequencer::on_ticks(ticks: u32, …)` | `Sequencer::on_notices(&[Notice], …)` | El secuenciador necesita el instante de cada aviso (§5) |
+| — | `Clock::reset()`, `MAX_CATCHUP_US` + `skipped_ticks()` | Alinear el compás al dar Play; no emitir ráfagas tras un atraso (§4.2) |
+| `interval_ticks` resuelto por slot | Predicado `Subdivision::hits(tick)` | El reparto euclidiano no es un intervalo fijo; el predicado es O(1) y está alineado al compás (§3) |
+
+## 12. Testing
+
+`crates/obrero-core/tests/clock.rs`, en host, sin hardware:
+- deriva nula en 5 minutos simulados con las ventanas de la web, y en 1 hora;
+- instantes exactos;
+- ventanas solapadas sin duplicados;
+- cambio de bpm sin saltos;
+- `PerBar(7)` y modo precisión;
+- `EveryNBars`;
+- 32 suscripciones en el mismo `advance`;
+- `ClockFull` y liberación por Drop;
+- desborde contado;
+- salto por atraso;
+- `reset`;
+- `DebugTap`.
+
+`no_std` verificado compilando para `xtensa-esp32s3-none-elf` (job de CI `core-no-std-xtensa`).

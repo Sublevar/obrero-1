@@ -31,6 +31,25 @@ jobs:
       - name: Build WASM
         run: cargo build -p obrero-wasm --target wasm32-unknown-unknown
 
+  core-no-std-xtensa:
+    name: Core no_std (xtensa-esp32s3)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: esp-rs/xtensa-toolchain@v1.6
+        with:
+          default: true
+          buildtargets: esp32s3
+          ldproxy: false
+      - name: Enable caching
+        uses: Swatinem/rust-cache@v2
+      - name: Build core (no_std)
+        run: cargo +esp build -p obrero-core --target xtensa-esp32s3-none-elf -Zbuild-std=core,alloc
+      - name: Build core (no_std + serde)
+        run: cargo +esp build -p obrero-core --features serde --target xtensa-esp32s3-none-elf -Zbuild-std=core,alloc
+
   firmware-checks:
     name: Firmware (xtensa)
     runs-on: ubuntu-latest

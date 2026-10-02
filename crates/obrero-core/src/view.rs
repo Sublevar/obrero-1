@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 /// Estado de la UI que produce el motor. El core no dibuja nada: el firmware
 /// lo renderiza en el display y la web lo serializa hacia JS.
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]

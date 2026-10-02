@@ -21,7 +21,7 @@ Cinco pilares que este archivo sostiene: coherencia lógica, estilo de código, 
   - `fs`, `net`, `process`: devuelven `Unsupported`;
   - `Mutex`, `RwLock` y canales: compilan, pero solo valen como si hubiera un único hilo. No se confía en ellos para sincronizar nada.
 - **Uso excepcional de `std`:** solo si es útil y viable en los dos targets a la vez, y siempre fuera del core `no_std` (en la capa de plataforma o detrás de una feature opcional que el core no activa por defecto). Antes de usarlo, Claude comprueba que cada API concreta funciona en runtime en `xtensa-esp32s3` y en `wasm32-unknown-unknown`, no solo que compila, y deja la justificación en la bitácora de la sesión. Ante la duda, `core`/`alloc`. Las APIs propias de un solo target (p. ej. hilos en el firmware, que sí tiene FreeRTOS) solo en la capa de plataforma de ese target, como frontera.
-- El resto de `obrero-core` todavía no es `no_std`: es deuda conocida (ver `docs/INDEX.md` §5), no una licencia para agregar más.
+- `obrero-core` declara `#![no_std]`; el job de CI `core-no-std-xtensa` lo compila para `xtensa-esp32s3-none-elf`, así que usar `std` en el core rompe el build.
 - Un cambio a un concepto compartido (Clock, Pattern, Midi, ViewModel) se refleja en todos sus consumidores (bindings wasm, UI web, firmware) o se documenta explícitamente como diferido — no se deja a medio migrar sin decirlo.
 
 ### Dependencias — solo si son irremplazables
@@ -54,11 +54,14 @@ El criterio es la fiabilidad y el testeo: herramientas de uso extendido, manteni
 - Cualquier feature con requisito de tiempo (clocks, subdivisiones, scheduling) necesita un test de precisión/deriva, no solo un test de que "anda" — ver `crates/obrero-core/tests/engine.rs::no_drift_over_simulated_minutes` como plantilla.
 - CI (`.github/workflows/rust_ci.yml`) corre `cargo test --workspace --all-features` + build WASM en stable, y `fmt`/`clippy`/`build` del firmware en su propio toolchain xtensa — un cambio no está terminado si rompe cualquiera de los dos jobs.
 
-## 4. Documentación
+## 4. Especificaciones y documentación
 
-- **La documentación y los tutoriales los escriben humanxs.** Claude no redacta documentación (`docs/product/`, `docs/engineering/`, `specs/`, READMEs) ni tutoriales. Si detecta algo que habría que documentar, lo deja anotado en "Queda abierto" de la bitácora de la sesión para que una persona lo escriba.
-- La única escritura en `docs/` que le corresponde a Claude es la de trazabilidad: `docs/INDEX.md` y `docs/sessions/` (ver §5).
-- Cómo se escriben los documentos (dónde va cada tipo, encabezado de autoría + fecha + estado) está en `docs/README.md`.
+Son dos cosas distintas.
+
+- **Especificaciones** (`specs/`, `docs/product/`, `docs/engineering/`): describen técnicamente qué se construye y por qué. No son documentación. Cuando un cambio **aprobado por una persona en la sesión** impacta una especificación, Claude la actualiza en el mismo paso que el código. Eso incluye el estado y la fecha del encabezado, y cuenta como un acto con registro (§5). Lo que no fue aprobado no entra en una spec: va a "Queda abierto" de la sesión.
+- **Documentación y tutoriales** (guías de uso, de desarrollo, READMEs orientados a usuarixs): todavía no existe y la escriben humanxs. Claude no la redacta; si detecta algo que habría que documentar, lo anota en "Queda abierto".
+- Además, Claude escribe la trazabilidad: `docs/INDEX.md` y `docs/sessions/` (§5).
+- Dónde va cada tipo y qué encabezado lleva está en `docs/README.md`.
 - `docs/INDEX.md` se actualiza en el mismo commit que agrega, borra o renombra un crate, un módulo de nivel superior, o un documento de `docs/`/`specs/`. Un índice desactualizado es peor que no tener índice.
 
 ## 5. Trazabilidad — acoplamiento forzado
@@ -74,5 +77,4 @@ El criterio es la fiabilidad y el testeo: herramientas de uso extendido, manteni
 ## Deuda conocida (no asumir que está resuelta)
 
 - `README.md` tiene marcadores de conflicto de merge sin resolver (ver `docs/INDEX.md` §5) — no tocar sin que alguien decida qué lado del conflicto es el vigente.
-- `crates/obrero-core` no declara `#![no_std]` todavía, pese al objetivo del proyecto — ver §1 arriba.
 - `firmware/src/main.rs` tiene tasks de demo y bloques comentados grandes que `docs/product/firmware-mvp-0.md` ya marcó para descartar.

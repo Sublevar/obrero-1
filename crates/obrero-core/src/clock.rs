@@ -4,28 +4,23 @@
 //! suscripción; nunca ejecuta código ajeno. Cada consumidor los retira cuando
 //! a él lo hacen avanzar.
 
+use alloc::boxed::Box;
 use alloc::rc::Rc;
+use alloc::vec;
 use alloc::vec::Vec;
 use core::cell::{Cell, RefCell};
 
-use crate::engine::{TimedMidi, MAX_BPM, MIN_BPM};
+use crate::engine::TimedMidi;
 use crate::pattern::{euclidean_hit, PPQN};
+pub use crate::tuning::{
+    BEATS_PER_BAR, ENGINE_RING_CAPACITY, EVERY_N_BARS_MAX, EXTERNAL_SMOOTHING, MAX_BPM,
+    MAX_CATCHUP_US, MAX_LOOKAHEAD_US, MAX_SUBS, MIDI_CLOCK_PPQN, MIN_BPM, NOTICE_CAPACITY,
+    PER_BAR_MAX, TICKS_PER_MIDI_CLOCK,
+};
 
-pub const BEATS_PER_BAR: u32 = 4;
 pub const TICKS_PER_BAR: u32 = PPQN * BEATS_PER_BAR;
-pub const MAX_SUBS: usize = 32;
-/// Avisos retenidos por suscripción. 100 ms de lookahead a 300 bpm son 12
-/// ticks base: con 16 alcanza si el consumidor lee en cada pump.
-pub const NOTICE_CAPACITY: usize = 16;
-pub const PER_BAR_MAX: u8 = 24;
-pub const EVERY_N_BARS_MAX: u8 = 8;
-/// Atraso máximo que `advance` recupera tick por tick. Más allá (pestaña
-/// dormida, laptop suspendida) salta hacia adelante en vez de emitir una
-/// ráfaga de ticks vencidos, y lo informa en `Clock::skipped_ticks`.
-pub const MAX_CATCHUP_US: u64 = 1_000_000;
 
 const US_PER_MINUTE_CENTI: u128 = 60_000_000 * 100;
-const PRECISE_PER_BAR: [u8; 9] = [1, 2, 3, 4, 6, 8, 12, 16, 24];
 
 /// Lectura del reloj real. Cada plataforma implementa la suya; el core no.
 pub trait TimeSource {
@@ -92,10 +87,13 @@ impl Bpm {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Subdivision {
-    /// n avisos por bar, repartidos E(n, 96). 1..=24.
+    /// n avisos por bar, repartidos E(n, TICKS_PER_BAR). 1..=PER_BAR_MAX.
     PerBar(u8),
-    /// 1 aviso cada n bars, al inicio del bar. 1..=8.
+    /// 1 aviso cada n bars, al inicio del bar. 1..=EVERY_N_BARS_MAX.
     EveryNBars(u8),
+    /// Un aviso por tick base. Es el consumo del `Engine`; pide un ring
+    /// grande (`subscribe_with_capacity`).
+    EveryTick,
 }
 
 impl Subdivision {
@@ -103,6 +101,7 @@ impl Subdivision {
         let ok = match self {
             Subdivision::PerBar(n) => (1..=PER_BAR_MAX).contains(&n),
             Subdivision::EveryNBars(n) => (1..=EVERY_N_BARS_MAX).contains(&n),
+            Subdivision::EveryTick => true,
         };
         if ok {
             Ok(self)
@@ -111,19 +110,19 @@ impl Subdivision {
         }
     }
 
-    /// Divisor exacto de 96 más cercano; ante empate, el menor.
+    /// Divisor exacto de `TICKS_PER_BAR` más cercano; ante empate, el menor.
     fn snap_precise(self) -> Self {
         match self {
             Subdivision::PerBar(n) => {
-                let mut best = PRECISE_PER_BAR[0];
-                for d in PRECISE_PER_BAR {
+                let mut best: u8 = 1;
+                for d in (1..=PER_BAR_MAX).filter(|d| TICKS_PER_BAR.is_multiple_of(*d as u32)) {
                     if d.abs_diff(n) < best.abs_diff(n) {
                         best = d;
                     }
                 }
                 Subdivision::PerBar(best)
             }
-            every => every,
+            other => other,
         }
     }
 
@@ -144,6 +143,7 @@ impl Subdivision {
                 TICKS_PER_BAR,
             ),
             Subdivision::EveryNBars(n) => tick.is_multiple_of(TICKS_PER_BAR as u64 * n as u64),
+            Subdivision::EveryTick => true,
         }
     }
 }
@@ -152,7 +152,8 @@ impl Subdivision {
 pub enum ClockError {
     /// Los `MAX_SUBS` slots están ocupados.
     Full,
-    /// Subdivisión fuera de `1..=PER_BAR_MAX` / `1..=EVERY_N_BARS_MAX`.
+    /// Subdivisión fuera de `1..=PER_BAR_MAX` / `1..=EVERY_N_BARS_MAX`, o
+    /// capacidad de ring que no cabe en una potencia de 2.
     OutOfRange,
 }
 
@@ -169,7 +170,9 @@ struct Slot {
     requested: Subdivision,
     effective: Subdivision,
     generation: u32,
-    ring: [Notice; NOTICE_CAPACITY],
+    /// Se reserva al suscribir; `push`/`take` nunca asignan.
+    /// Capacidad potencia de 2: el índice usa máscara.
+    ring: Box<[Notice]>,
     head: usize,
     len: usize,
     lost: u32,
@@ -178,22 +181,47 @@ struct Slot {
 impl Slot {
     /// Ring lleno: se descarta el aviso nuevo y se cuenta, nunca en silencio.
     fn push(&mut self, n: Notice) {
-        if self.len == NOTICE_CAPACITY {
+        let mask = self.ring.len() - 1;
+        if self.len == self.ring.len() {
             self.lost = self.lost.saturating_add(1);
             return;
         }
-        self.ring[(self.head + self.len) % NOTICE_CAPACITY] = n;
+        self.ring[(self.head + self.len) & mask] = n;
         self.len += 1;
     }
 
     fn drain_into(&mut self, out: &mut Vec<Notice>) -> u32 {
         for i in 0..self.len {
-            out.push(self.ring[(self.head + i) % NOTICE_CAPACITY]);
+            out.push(self.ring[(self.head + i) & (self.ring.len() - 1)]);
         }
         self.head = 0;
         self.len = 0;
         core::mem::take(&mut self.lost)
     }
+}
+
+/// Quién genera los ticks del `Clock`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ClockSource {
+    /// Los genera `advance` desde `Time` y el `Bpm`.
+    Internal,
+    /// Los genera `external_pulse` a partir de cada 0xF8 recibido.
+    External,
+}
+
+/// Seguimiento del reloj externo.
+#[derive(Clone, Copy, Debug)]
+struct ExternalState {
+    last_pulse_us: Option<u64>,
+    /// Período suavizado entre 0xF8, en µs.
+    period_us: u64,
+    /// Instante del último tick emitido: las estampas no decrecen.
+    last_stamp_us: u64,
+}
+
+/// Período de un 0xF8 (1/24 de negra) a `centi` centésimas de bpm.
+fn pulse_period_us(centi: u32) -> u64 {
+    (US_PER_MINUTE_CENTI / (centi as u128 * MIDI_CLOCK_PPQN as u128)) as u64
 }
 
 /// Punto desde el que se calculan los tiempos: el tick `tick` cae en `at_us`
@@ -224,6 +252,8 @@ impl Anchor {
 pub struct Clock {
     bpm: Cell<Bpm>,
     precision_mode: Cell<bool>,
+    source: Cell<ClockSource>,
+    external: Cell<Option<ExternalState>>,
     anchor: Cell<Option<Anchor>>,
     next_tick: Cell<u64>,
     skipped: Cell<u64>,
@@ -236,6 +266,8 @@ impl Clock {
         Rc::new(Self {
             bpm: Cell::new(bpm),
             precision_mode: Cell::new(false),
+            source: Cell::new(ClockSource::Internal),
+            external: Cell::new(None),
             anchor: Cell::new(None),
             next_tick: Cell::new(0),
             skipped: Cell::new(0),
@@ -249,6 +281,15 @@ impl Clock {
     /// (o la primera tras `reset`) ancla el tick 0 en `now`.
     pub fn advance(&self, time: &Time, lookahead_us: u64) {
         let now = time.now_us();
+        self.advance_to(now, now.saturating_add(lookahead_us));
+    }
+
+    /// Como `advance`, con el horizonte absoluto. Permite partir un
+    /// lookahead largo en pasadas que no desborden los rings.
+    pub fn advance_to(&self, now: u64, horizon: u64) {
+        if self.source.get() != ClockSource::Internal {
+            return;
+        }
         let mut anchor = match self.anchor.get() {
             Some(a) => a,
             None => Anchor {
@@ -271,7 +312,6 @@ impl Clock {
             self.skipped.set(self.skipped.get() + skip);
         }
 
-        let horizon = now.saturating_add(lookahead_us);
         // Ningún código ajeno corre mientras este borrow está vivo: es lo que
         // garantiza que el borrow del Drop de Subscription nunca falle.
         let mut slots = self.slots.borrow_mut();
@@ -311,6 +351,63 @@ impl Clock {
         self.bpm.get()
     }
 
+    pub fn source(&self) -> ClockSource {
+        self.source.get()
+    }
+
+    /// Cambia quién genera los ticks y vuelve al tick 0.
+    pub fn set_source(&self, source: ClockSource) {
+        self.source.set(source);
+        self.reset();
+    }
+
+    /// Un 0xF8 recibido en `now_us`. Mide el período entre pulsos (suavizado
+    /// con `EXTERNAL_SMOOTHING`, acotado a `MIN_BPM..=MAX_BPM`), ajusta el
+    /// `Bpm` al medido y genera los `TICKS_PER_MIDI_CLOCK` ticks del pulso,
+    /// repartidos parejo a lo largo de ese período, desde `now_us`.
+    /// No hace nada en `ClockSource::Internal`.
+    pub fn external_pulse(&self, now_us: u64) {
+        if self.source.get() != ClockSource::External {
+            return;
+        }
+        let fastest = pulse_period_us(Bpm::MAX.0);
+        let slowest = pulse_period_us(Bpm::MIN.0);
+        let mut st = self.external.get().unwrap_or(ExternalState {
+            last_pulse_us: None,
+            period_us: pulse_period_us(self.bpm.get().0),
+            last_stamp_us: 0,
+        });
+        if let Some(last) = st.last_pulse_us {
+            let measured = now_us.saturating_sub(last);
+            // Un silencio de más de dos pulsos lentos es un corte, no un tempo.
+            if measured <= 2 * slowest {
+                let measured = measured.clamp(fastest, slowest);
+                st.period_us =
+                    (st.period_us * (EXTERNAL_SMOOTHING - 1) + measured) / EXTERNAL_SMOOTHING;
+            }
+        }
+        st.last_pulse_us = Some(now_us);
+        let centi = (US_PER_MINUTE_CENTI / (st.period_us as u128 * MIDI_CLOCK_PPQN as u128)) as u32;
+        self.bpm.set(Bpm::from_centi(centi));
+
+        let start = now_us.max(st.last_stamp_us);
+        let mut tick = self.next_tick.get();
+        let mut slots = self.slots.borrow_mut();
+        for k in 0..TICKS_PER_MIDI_CLOCK as u64 {
+            let at_us =
+                start + (k as u128 * st.period_us as u128 / TICKS_PER_MIDI_CLOCK as u128) as u64;
+            for slot in slots.iter_mut().flatten() {
+                if slot.effective.hits(tick) {
+                    slot.push(Notice { tick, at_us });
+                }
+            }
+            st.last_stamp_us = at_us;
+            tick += 1;
+        }
+        self.next_tick.set(tick);
+        self.external.set(Some(st));
+    }
+
     /// Re-resuelve todas las suscripciones vivas desde lo que pidieron.
     pub fn set_precision_mode(&self, on: bool) {
         self.precision_mode.set(on);
@@ -327,6 +424,7 @@ impl Clock {
     /// pendientes: pertenecen a la línea de tiempo anterior.
     pub fn reset(&self) {
         self.anchor.set(None);
+        self.external.set(None);
         self.next_tick.set(0);
         for slot in self.slots.borrow_mut().iter_mut().flatten() {
             slot.head = 0;
@@ -339,6 +437,18 @@ impl Clock {
         self.next_tick.get()
     }
 
+    /// Instante del próximo tick a generar; `None` hasta el primer `advance`
+    /// tras crear o `reset`.
+    pub fn next_tick_at_us(&self) -> Option<u64> {
+        if self.source.get() == ClockSource::External {
+            return self
+                .external
+                .get()
+                .map(|st| st.last_stamp_us + st.period_us / TICKS_PER_MIDI_CLOCK as u64);
+        }
+        self.anchor.get().map(|a| a.time_of(self.next_tick.get()))
+    }
+
     /// Ticks salteados en total por atrasos mayores a `MAX_CATCHUP_US`.
     pub fn skipped_ticks(&self) -> u64 {
         self.skipped.get()
@@ -348,6 +458,19 @@ impl Clock {
         self: &Rc<Self>,
         subdivision: Subdivision,
     ) -> Result<Subscription, ClockError> {
+        self.subscribe_with_capacity(subdivision, NOTICE_CAPACITY)
+    }
+
+    /// Igual que `subscribe`, con un ring de `capacity` avisos (redondeada
+    /// a la siguiente potencia de 2; 0 se redondea a 1).
+    pub fn subscribe_with_capacity(
+        self: &Rc<Self>,
+        subdivision: Subdivision,
+        capacity: usize,
+    ) -> Result<Subscription, ClockError> {
+        let capacity = capacity
+            .checked_next_power_of_two()
+            .ok_or(ClockError::OutOfRange)?;
         let requested = subdivision.validate()?;
         let mut slots = self.slots.borrow_mut();
         let index = slots
@@ -360,7 +483,7 @@ impl Clock {
             requested,
             effective: requested.resolve(self.precision_mode.get()),
             generation,
-            ring: [NO_NOTICE; NOTICE_CAPACITY],
+            ring: vec![NO_NOTICE; capacity].into_boxed_slice(),
             head: 0,
             len: 0,
             lost: 0,
@@ -444,7 +567,7 @@ pub trait Sequencer {
 pub struct TimeMark {
     pub bar: u32,
     pub beat: u8,
-    pub tick_in_beat: u8,
+    pub tick_in_beat: u16,
     pub at_us: u64,
 }
 
@@ -454,7 +577,7 @@ impl From<Notice> for TimeMark {
         Self {
             bar: (n.tick / TICKS_PER_BAR as u64) as u32,
             beat: (in_bar / PPQN) as u8,
-            tick_in_beat: (in_bar % PPQN) as u8,
+            tick_in_beat: (in_bar % PPQN) as u16,
             at_us: n.at_us,
         }
     }

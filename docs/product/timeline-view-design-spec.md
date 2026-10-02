@@ -17,7 +17,7 @@ This is the second lens over the canonical note model defined as a prerequisite 
 The grid (`web/src/ui.ts`: 5 tracks × 16 toggle cells) answers "*which* semiquaver slots fire?". It structurally cannot express:
 
 1. **Duration as a gesture.** `gate_ticks` exists in core but the grid UI doesn't even expose it. Legato bass vs. staccato stabs is *the* difference between two takes of the same pattern; on a timeline it's dragging a note's right edge.
-2. **Off-lattice timing.** The engine resolves 24 PPQN — 6 positions inside every grid cell that today are unreachable. Pushed hats, anticipated chord changes, humanized timing.
+2. **Off-lattice timing.** The engine resolves 480 PPQN (raised from 24 on 2026-10-02) — 120 positions inside every grid cell that today are unreachable. Pushed hats, anticipated chord changes, humanized timing.
 3. **Melodic phrasing.** `set_track_note` paints one pitch across a whole track (drum-lane model). A melody needs per-event pitch — a compact piano-roll lane.
 4. **Polymeter you can *see*.** Per-track `len` already lets a 12-step track phase against 16. But the grid hides the relationship — both rows just look like rows. On a shared ruler, a 3-beat loop visibly drifts against a 4-beat loop, with ghost repeats showing exactly where they realign. This is the timeline's signature demo and why the shared ruler is non-negotiable.
 5. **Phrases longer than 16 steps** without rendering 64+ tiny cells.
@@ -89,7 +89,7 @@ Euclidean tracks render in the timeline like any other lane (the generator write
 
 ## 3. Transport & time model
 
-- **Ticks are the only time currency.** 24 PPQN (`pattern.rs::PPQN`), quarter = 24 ticks, 4/4 bar = 96. The UI maps ticks→pixels; core never sees pixels. "Free placement" honestly means *free at 24 PPQN* (~20.8 ms at 120 BPM); PPQN bumps stay deferred until a musician feels the ceiling.
+- **Ticks are the only time currency.** 480 PPQN (`tuning.rs::PPQN`, raised from 24 on 2026-10-02), quarter = 480 ticks, 4/4 bar = 1920. The UI maps ticks→pixels; core never sees pixels. "Free placement" means *free at 480 PPQN* (~1.04 ms at 120 BPM). **Tick counts quoted elsewhere in this document (96, 768, `n × 6`, …) were written at 24 PPQN: multiply by 20, or derive them from `PPQN`.** The MIDI clock stays at 24 PPQN.
 - **Tempo** is untouched: BPM scales tick period in `advance()`; timeline geometry is tempo-independent. External clock mode works identically — the playhead advances on incoming `0xF8`, the view doesn't know or care.
 - **No time-signature system.** Core stores loop length **in ticks** (`loop_ticks`, 1..=768, i.e. up to 8 bars) — not beats, because euclidean loops are already non-integer beat counts (E(k,10) ⇒ 60 ticks = 2.5 beats). **Beat-snapping is a UI affordance of the bracket drag only** (1–32 beats), consistent with "snap is never stored, never in core". The ruler assumes groups of 4 beats for bar numbering. A 7-beat loop *is* 7/4; a 3-beat loop against a 4-beat loop *is* polymeter. This buys odd meters and polymeter with zero new model concepts, generalizing today's per-track `len`. A real meter/ruler-grouping feature can come later without touching stored data.
 - **Polymeter**: tracks keep independent `loop_ticks` and wrap independently (today: `step_index % track.len` in `events_at`; tomorrow: `tick % loop_ticks`). The shared ruler + ghost repeats make this *visible* for the first time.

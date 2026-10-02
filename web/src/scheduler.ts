@@ -22,9 +22,15 @@ export function sendAll(records: Float64Array, output: MIDIOutput | null): void 
 export function startScheduler(
   engine: WasmEngine,
   getOutput: () => MIDIOutput | null,
+  onPump?: (gapMs: number) => void,
 ): number {
+  let last = performance.now();
   return window.setInterval(() => {
-    const records = engine.advance(performance.now(), LOOKAHEAD_MS);
+    const now = performance.now();
+    const gap = now - last;
+    last = now;
+    const records = engine.advance(now, LOOKAHEAD_MS);
     sendAll(records, getOutput());
+    onPump?.(gap);
   }, PUMP_INTERVAL_MS);
 }

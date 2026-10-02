@@ -1,8 +1,8 @@
-mod clock;
-mod time;
+mod debug;
 
-pub use clock::{WasmClock, WasmDebugTap, WasmSubscription};
+pub use debug::WasmDebugTap;
 
+use obrero_core::clock::{DebugTap, Subdivision};
 use obrero_core::engine::{Engine, TimedMidi};
 use obrero_core::pattern::Step;
 use obrero_core::{ChannelMode, ClockSource};
@@ -47,6 +47,36 @@ impl WasmEngine {
         self.inner.set_tempo(bpm);
     }
 
+    pub fn bpm(&self) -> f32 {
+        self.inner.bpm()
+    }
+
+    /// Instante (ms, base de `performance.now()`) del próximo tick que el
+    /// reloj va a generar; NaN si no hay reloj corriendo.
+    pub fn next_tick_ms(&self) -> f64 {
+        self.inner
+            .next_tick_at_us()
+            .map_or(f64::NAN, |us| us as f64 / MS_TO_US)
+    }
+
+    /// Pérdidas acumuladas: [ticks descartados por ring lleno, ticks salteados
+    /// tras un atraso, pasos del patrón salteados].
+    pub fn loss_report(&self) -> Vec<f64> {
+        let r = self.inner.loss_report();
+        vec![
+            r.lost_ticks as f64,
+            r.skipped_ticks as f64,
+            r.skipped_steps as f64,
+        ]
+    }
+
+    /// Consumidor de depuración colgado del reloj propio del motor.
+    pub fn debug_tap(&self, per_bar: u8) -> Result<WasmDebugTap, JsError> {
+        DebugTap::new(self.inner.clock(), Subdivision::PerBar(per_bar))
+            .map(WasmDebugTap::new)
+            .map_err(|_| JsError::new("subdivisión fuera de rango o clock lleno"))
+    }
+
     pub fn play(&mut self) {
         self.inner.play();
     }
@@ -74,7 +104,7 @@ impl WasmEngine {
         on: bool,
         note: u8,
         velocity: u8,
-        gate_ticks: u8,
+        gate_ticks: u16,
     ) {
         self.inner.set_step(
             track,

@@ -76,5 +76,4 @@ Son dos cosas distintas.
 
 ## Deuda conocida (no asumir que está resuelta)
 
-- `README.md` tiene marcadores de conflicto de merge sin resolver (ver `docs/INDEX.md` §5) — no tocar sin que alguien decida qué lado del conflicto es el vigente.
 - `firmware/src/main.rs` tiene tasks de demo y bloques comentados grandes que `docs/product/firmware-mvp-0.md` ya marcó para descartar.

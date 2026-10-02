@@ -2,6 +2,7 @@
 
 **Source spec:** `docs/product/timeline-view-design-spec.md` (2026-06-12) — **agreed baseline**, not a proposal. The spec inlines its prerequisites as P1–P3 (§4) and pins shared decisions in §5 "Settled behaviors" (trade-offs are §6); this plan carries the engineering detail for the same decisions.
 **Scope:** web-first (core + wasm + vite). Firmware untouched; core API choices keep the ESP32 port viable.
+**Note (2026-10-02):** PPQN is now 480 (was 24; `crates/obrero-core/src/tuning.rs`). Tick counts in this plan (`96`, `288`, `n × 6`, `768`) were written at 24 PPQN: multiply by 20 or derive them from `PPQN`; `gate_ticks`/`ticks_per_step` are `u16`.
 **Author:** Technical Manager agent. Status: ready for execution. Alignment pass 2026-06-12: folded in the two post-review product decisions (euclid loop bracket locked; track-note control drum-lanes-only) and synced references to the renumbered spec.
 
 ---

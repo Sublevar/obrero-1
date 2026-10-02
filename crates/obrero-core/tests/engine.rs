@@ -232,13 +232,14 @@ fn tempo_change_applies_to_future_ticks() {
     let mut out = Vec::new();
     e.play();
     e.advance(0, 0, &mut out); // ancla + tick 0
-    e.set_tempo(60.0); // período pasa de 20833 a 41667 µs
+    e.set_tempo(60.0); // período pasa de 1041.67 a 2083.33 µs por tick
     out.clear();
     e.advance(0, 99_999, &mut out);
     let ticks = clocks(&out);
-    // ticks a ~20833 (agendado antes del cambio), luego cada 41667
-    assert!((ticks[0] as i64 - 20_833).abs() <= 1);
-    assert!((ticks[1] as i64 - 62_500).abs() <= 1);
+    // El tick 1 ya estaba agendado a 1041.67 µs; desde ahí, 2083.33 µs por
+    // tick: 0xF8 en los ticks 20 y 40.
+    assert!((ticks[0] as i64 - 40_625).abs() <= 1);
+    assert!((ticks[1] as i64 - 82_292).abs() <= 1);
 }
 
 #[test]
@@ -428,5 +429,162 @@ fn next_event_at_reports_upcoming_tick() {
     let mut out = Vec::new();
     e.advance(1_000, 0, &mut out);
     let next = e.next_event_at().unwrap();
-    assert!((next as i64 - 21_833).abs() <= 1); // 1000 + 20833
+    assert!((next as i64 - 2_041).abs() <= 1); // 1000 + 1 tick (1041.67 µs)
+}
+
+#[test]
+fn midi_clock_stays_at_24ppqn_with_480_ppqn_ticks() {
+    use obrero_core::pattern::PPQN;
+    use obrero_core::tuning::TICKS_PER_MIDI_CLOCK;
+    assert_eq!(PPQN, 480);
+    assert_eq!(TICKS_PER_MIDI_CLOCK, 20);
+    let mut e = Engine::new();
+    let mut out = Vec::new();
+    e.play();
+    e.advance(0, 4_999_999, &mut out);
+    let ticks = clocks(&out);
+    assert_eq!(ticks.len(), 240); // 5 s a 120 bpm = 10 negras × 24
+    for pair in ticks.windows(2) {
+        let d = pair[1] - pair[0];
+        assert!((20_832..=20_834).contains(&d), "{d}");
+    }
+}
+
+#[test]
+fn no_drift_at_max_tempo_over_five_minutes() {
+    use obrero_core::engine::MAX_BPM;
+    let mut e = Engine::new();
+    e.set_tempo(MAX_BPM);
+    let mut out = Vec::new();
+    e.play();
+    let mut all = Vec::new();
+    let mut now: u64 = 0;
+    while now < 300_000_000 {
+        e.advance(now, 100_000, &mut out);
+        all.append(&mut out);
+        now += 25_000;
+    }
+    let ticks = clocks(&all);
+    let last = *ticks.last().unwrap();
+    let expected = (ticks.len() as f64 - 1.0) * (60_000_000.0 / (MAX_BPM as f64 * 24.0));
+    assert!(
+        (last as f64 - expected).abs() < 2.0,
+        "drift: last={last} expected={expected}"
+    );
+    assert_eq!(e.lost_ticks(), 0);
+}
+
+#[test]
+fn long_stall_at_max_tempo_loses_no_engine_ticks() {
+    use obrero_core::engine::MAX_BPM;
+    let mut e = Engine::new();
+    e.set_tempo(MAX_BPM);
+    let mut out = Vec::new();
+    e.play();
+    e.advance(0, 100_000, &mut out);
+    // Pestaña dormida 10 s y lookahead gigante: el peor caso para el ring.
+    e.advance(10_000_000, 4_000_000, &mut out);
+    assert_eq!(e.lost_ticks(), 0);
+    assert!(e.clock().skipped_ticks() > 0);
+}
+
+#[test]
+fn engine_clock_accepts_extra_subscriptions() {
+    use obrero_core::clock::Subdivision;
+    let mut e = Engine::new();
+    let sub = e.clock().subscribe(Subdivision::PerBar(4)).unwrap();
+    let mut out = Vec::new();
+    e.play();
+    e.advance(0, 1_100_000, &mut out);
+    let mut notices = Vec::new();
+    assert_eq!(sub.take(&mut notices), 0);
+    let ticks: Vec<u64> = notices.iter().map(|n| n.tick).collect();
+    assert_eq!(ticks, vec![0, 480, 960]);
+    assert_eq!(notices[1].at_us, 500_000);
+}
+
+#[test]
+fn external_clock_goes_through_the_clock_and_reports_measured_bpm() {
+    let mut e = Engine::new();
+    e.toggle_step(0, 0);
+    e.toggle_step(0, 1);
+    e.set_clock_source(ClockSource::External);
+    let mut out = Vec::new();
+    e.feed_midi_in(&[0xFA], 0, &mut out);
+    // 100 bpm: 0xF8 cada 25 ms. El paso 1 (120 ticks = 6 pulsos) cae a los 150 ms.
+    for i in 0..30u64 {
+        e.feed_midi_in(&[0xF8], i * 25_000, &mut out);
+    }
+    assert!((e.bpm() - 100.0).abs() < 0.2, "{}", e.bpm());
+    let ons: Vec<u64> = notes(&out)
+        .into_iter()
+        .filter(|(_, s, _, _)| *s == 0x90)
+        .map(|(t, _, _, _)| t)
+        .collect();
+    assert_eq!(ons[0], 0);
+    // Los 120 ticks del paso se reparten: el 2.º note-on cae en el 7.º pulso.
+    assert_eq!(ons[1], 6 * 25_000);
+    assert_eq!(e.lost_ticks(), 0);
+    assert!(e.next_tick_at_us().is_some());
+    assert!(clocks(&out).is_empty(), "esclavo: no re-emite 0xF8");
+}
+
+#[test]
+fn external_continue_resumes_where_stop_left_the_pattern() {
+    let mut e = Engine::new();
+    e.toggle_step(0, 1);
+    e.set_clock_source(ClockSource::External);
+    let mut out = Vec::new();
+    e.feed_midi_in(&[0xFA], 0, &mut out);
+    for i in 0..3u64 {
+        e.feed_midi_in(&[0xF8], i * 20_833, &mut out); // 60 ticks: mitad del paso 0
+    }
+    e.feed_midi_in(&[0xFC], 70_000, &mut out);
+    // Pulsos con el transporte detenido: miden tempo pero no mueven el patrón.
+    for i in 0..10u64 {
+        e.feed_midi_in(&[0xF8], 80_000 + i * 20_833, &mut out);
+    }
+    out.clear();
+    e.feed_midi_in(&[0xFB], 300_000, &mut out); // Continue
+    let ons = |out: &[TimedMidi]| {
+        notes(out)
+            .into_iter()
+            .filter(|(_, s, _, _)| *s == 0x90)
+            .count()
+    };
+    for i in 0..3u64 {
+        e.feed_midi_in(&[0xF8], 300_000 + i * 20_833, &mut out);
+    }
+    // Continue retoma en el tick 60: con 3 pulsos va por el 120, aún sin disparar.
+    assert_eq!(ons(&out), 0);
+    e.feed_midi_in(&[0xF8], 300_000 + 3 * 20_833, &mut out);
+    assert_eq!(ons(&out), 1);
+}
+
+#[test]
+fn skipped_ticks_and_steps_are_reported_and_the_grid_is_kept() {
+    let mut e = Engine::new();
+    e.toggle_step(0, 0); // paso 0 de un loop de 16 pasos (2 s a 120 bpm)
+    let mut out = Vec::new();
+    e.play();
+    e.advance(0, 0, &mut out);
+    assert_eq!(e.loss_report(), obrero_core::LossReport::default());
+
+    // 10 s sin bombear: salto de ticks, no ráfaga.
+    out.clear();
+    e.advance(10_000_000, 0, &mut out);
+    let r = e.loss_report();
+    assert_eq!(r.lost_ticks, 0);
+    assert_eq!(r.skipped_ticks, 9_599, "ticks 1..9600");
+    assert_eq!(
+        r.skipped_steps, 79,
+        "pasos 1..=79; el 80 suena en el tick 9600"
+    );
+    // La grilla se conserva: el tick 9600 es el paso 80 = paso 0 del loop.
+    let ons: Vec<u64> = notes(&out)
+        .into_iter()
+        .filter(|(_, s, _, _)| *s == 0x90)
+        .map(|(t, _, _, _)| t)
+        .collect();
+    assert_eq!(ons, vec![10_000_000]);
 }

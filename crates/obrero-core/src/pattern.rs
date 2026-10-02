@@ -1,16 +1,20 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
-/// Resolución interna: 24 ticks por negra (= MIDI clock).
-pub const PPQN: u32 = 24;
+pub use crate::tuning::PPQN;
+
+/// Un paso de semicorchea.
+pub const DEFAULT_TICKS_PER_STEP: u16 = (PPQN / 4) as u16;
+/// Media semicorchea.
+pub const DEFAULT_GATE_TICKS: u16 = (PPQN / 8) as u16;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Step {
     pub on: bool,
     pub note: u8,
     pub velocity: u8,
-    /// Duración de la nota en ticks (6 ticks = un paso de semicorchea).
-    pub gate_ticks: u8,
+    /// Duración de la nota en ticks (`DEFAULT_TICKS_PER_STEP` = un paso).
+    pub gate_ticks: u16,
 }
 
 /// Cómo se define la secuencia de un track.
@@ -55,7 +59,7 @@ impl Track {
                     on: false,
                     note,
                     velocity: 100,
-                    gate_ticks: 3
+                    gate_ticks: DEFAULT_GATE_TICKS
                 };
                 num_steps
             ],
@@ -76,7 +80,7 @@ impl Track {
                 on: false,
                 note: 60,
                 velocity: 100,
-                gate_ticks: 3,
+                gate_ticks: DEFAULT_GATE_TICKS,
             })
         };
         if self.steps.len() < steps as usize {
@@ -113,14 +117,14 @@ pub struct NoteEvent {
     pub channel: u8,
     pub note: u8,
     pub velocity: u8,
-    pub gate_ticks: u8,
+    pub gate_ticks: u16,
 }
 
 #[derive(Clone, Debug)]
 pub struct Pattern {
     pub tracks: Vec<Track>,
-    /// Ticks por paso (6 = semicorcheas a 24 PPQN).
-    pub ticks_per_step: u8,
+    /// Ticks por paso (`DEFAULT_TICKS_PER_STEP` = semicorcheas).
+    pub ticks_per_step: u16,
     pub channel_mode: ChannelMode,
 }
 
@@ -129,7 +133,7 @@ impl Pattern {
     pub fn starter() -> Self {
         Self {
             tracks: (0..5).map(|i| Track::new(0, 60 + i, 16)).collect(),
-            ticks_per_step: 6,
+            ticks_per_step: DEFAULT_TICKS_PER_STEP,
             channel_mode: ChannelMode::PerTrack,
         }
     }
@@ -137,8 +141,8 @@ impl Pattern {
     /// Notas que caen en `tick`. Única consulta que hace el motor durante la
     /// reproducción — reemplazar la grilla por una lista de eventos a futuro
     /// solo toca esta función.
-    pub fn events_at(&self, tick: u32, out: &mut Vec<NoteEvent>) {
-        let tps = self.ticks_per_step as u32;
+    pub fn events_at(&self, tick: u64, out: &mut Vec<NoteEvent>) {
+        let tps = self.ticks_per_step as u64;
         if !tick.is_multiple_of(tps) {
             return;
         }

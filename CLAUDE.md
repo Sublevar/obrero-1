@@ -2,7 +2,7 @@
 
 Este archivo es para cualquier sesión de Claude Code (o agente equivalente) que trabaje en este repo, compartido entre varias personas en un proyecto de largo aliento. Antes de tocar código, **leé `docs/INDEX.md`** — es el mapa de partes del repo; evita tener que explorar carpeta por carpeta cada sesión y debe estar siempre actualizado.
 
-Cinco pilares que este archivo sostiene: coherencia lógica, estilo de escritura, testeo, documentación, trazabilidad de sesiones.
+Cinco pilares que este archivo sostiene: coherencia lógica, estilo de código, testeo, documentación, trazabilidad de sesiones.
 
 ## 0. Git — carga manual, nunca automática
 
@@ -17,12 +17,15 @@ Cinco pilares que este archivo sostiene: coherencia lógica, estilo de escritura
 - Disciplina `no_std` para código nuevo en `crates/obrero-core`: el objetivo del proyecto es que la misma lógica corra en web y en ESP32-S3. Código nuevo no debe depender de `std` (usar `core`/`alloc` cuando haga falta heap). El resto del crate todavía no es `no_std` — es deuda conocida (ver `docs/INDEX.md` §5), no una licencia para agregar más.
 - Un cambio a un concepto compartido (Clock, Pattern, Midi, ViewModel) se refleja en todos sus consumidores (bindings wasm, UI web, firmware) o se documenta explícitamente como diferido — no se deja a medio migrar sin decirlo.
 
-## 2. Estilo de escritura
+## 2. Estilo de código
 
-- Comentarios de código en español técnico, tersos, explicando el *por qué* (una decisión, una restricción oculta, un trade-off) — no el *qué* (eso ya lo dice el código bien nombrado). Mirar `engine.rs`/`pattern.rs` como referencia de tono.
-- Documentos en `docs/product/` y `docs/engineering/` llevan encabezado con autoría de rol + fecha + estado: `**obrero-1, <alcance>.** Author: <rol> agent, <fecha>. Status: <proposal | agreed baseline | ready for execution>.` — ya es la convención que el repo usa (ver `firmware-mvp-0.md`, `timeline-view-design-spec.md`).
-- `specs/` es el lugar de menor formalidad para arquitectura fundacional — se puede iterar ahí antes de que exista un "producto" alrededor (ver `specs/clock.md`).
-- Mensajes de commit sugeridos en español, con prefijo (`fix:`, `add:`, `refactor:`) cuando aplica — ver §0 sobre quién los ejecuta.
+- El estilo es el del **código**, no el de los comentarios: código nuevo se escribe como el que lo rodea — nombres, idioma, estructura, manejo de errores. `engine.rs`/`pattern.rs` son la referencia de forma. `rustfmt`/`clippy` son el piso, no el criterio.
+- Comentarios: mínimos y concisos. Solo van donde hacen falta:
+  - funciones muy abstractas, donde nombre + firma no alcanzan para entender el contrato;
+  - texto que una herramienta muestra como documentación (doc comments `///` para `cargo doc`, textos de `--help` o similares).
+
+  Fuera de eso, no se comenta lo que el código ya dice.
+
 
 ## 3. Testeo
 
@@ -32,12 +35,20 @@ Cinco pilares que este archivo sostiene: coherencia lógica, estilo de escritura
 
 ## 4. Documentación
 
-- Producto/UX → `docs/product/`. Plan de ingeniería ligado 1:1 a un spec de producto → `docs/engineering/`. Arquitectura fundacional, menos formal → `specs/`. Bitácora de sesión → `docs/sessions/`.
+- **La documentación y los tutoriales los escriben humanxs.** Claude no redacta documentación (`docs/product/`, `docs/engineering/`, `specs/`, READMEs) ni tutoriales. Si detecta algo que habría que documentar, lo deja anotado en "Queda abierto" de la bitácora de la sesión para que una persona lo escriba.
+- La única escritura en `docs/` que le corresponde a Claude es la de trazabilidad: `docs/INDEX.md` y `docs/sessions/` (ver §5).
+- Cómo se escriben los documentos (dónde va cada tipo, encabezado de autoría + fecha + estado) está en `docs/README.md`.
 - `docs/INDEX.md` se actualiza en el mismo commit que agrega, borra o renombra un crate, un módulo de nivel superior, o un documento de `docs/`/`specs/`. Un índice desactualizado es peor que no tener índice.
 
-## 5. Trazabilidad de sesiones de IA
+## 5. Trazabilidad — acoplamiento forzado
 
-- Toda sesión de trabajo asistida por IA que tome decisiones significativas (de arquitectura, de producto, o que determine qué queda fuera de alcance) deja un registro en `docs/sessions/` — ver `docs/sessions/README.md` para la convención y la plantilla. Esto alcanza como trazabilidad: **no se usa atribución `Co-Authored-By` en los commits** — no es información confiable de autoría real y el registro en `docs/sessions/` ya cubre el "qué se decidió y por qué" con más detalle del que cabe en un trailer de commit.
+- **Todo acto de Claude que modifique un archivo del repo** se registra en el mismo paso (la misma respuesta, antes de cerrar el turno) en los dos lugares:
+  1. una entrada en la "Bitácora de actos" del archivo de sesión en `docs/sessions/` (creándolo si es el primer acto de la sesión — ver `docs/sessions/README.md`);
+  2. una fila en `docs/INDEX.md` §6 que apunte a esa sesión, más la actualización de las filas del índice si el acto cambió la estructura.
+- Sin excepciones: aplica igual con permisos en modo manual, en un "cambio rápido", en un typo o en un cambio pedido en una sola línea. Un acto sin registro corta la cadena, y la cadena no se corta.
+- Lo hace cumplir el hook `Stop` de `.claude/settings.json` (`.claude/hooks/check-trazabilidad.sh`): si algún archivo cambiado es más nuevo que `docs/INDEX.md` o que la última bitácora, el turno no cierra. Si el hook bloquea, se registra el acto — no se desactiva el hook ni se esquiva (p. ej. tocando mtimes).
+- Si el working tree trae cambios que no hizo Claude (de una persona), igual se registran, marcados como "cambio ajeno detectado", sin atribuírselos.
+- Esto alcanza como trazabilidad: **no se usa atribución `Co-Authored-By` en los commits** — no es información confiable de autoría real y el registro en `docs/sessions/` ya cubre el "qué se decidió y por qué" con más detalle del que cabe en un trailer de commit.
 
 ## Deuda conocida (no asumir que está resuelta)
 

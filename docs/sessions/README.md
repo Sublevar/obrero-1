@@ -1,6 +1,8 @@
 # docs/sessions/ — trazabilidad de sesiones de trabajo con IA
 
-Un archivo por sesión de trabajo asistida por IA que tomó decisiones significativas: de arquitectura, de producto, o que fijó qué queda explícitamente fuera de alcance. No es para cada sesión — una sesión que solo corrige un typo o aplica un cambio ya acordado en otro lado no necesita entrada. Es para cuando alguien, meses después, va a preguntarse "¿por qué quedó así?" y la respuesta no está en el código ni en el commit.
+Un archivo por sesión de trabajo asistida por IA que modificó al menos un archivo del repo. **No hay sesiones exentas**: un typo, un cambio rápido o un cambio ya acordado en otro lado también se registran, como un acto más en la "Bitácora de actos" (acoplamiento forzado, ver `CLAUDE.md` §5). Las secciones de decisiones y lo que queda abierto pueden ser una línea si la sesión fue chica; la bitácora no se omite nunca.
+
+Cada acto se registra en el mismo paso en que se hace, en dos lugares: su entrada acá y su fila en `docs/INDEX.md` §6. El hook `Stop` de `.claude/settings.json` bloquea el cierre del turno si falta alguno de los dos.
 
 ## Nombre de archivo
 
@@ -30,6 +32,12 @@ Lo que se identificó pero se dejó deliberadamente para después, y por qué no
 ## Artefactos de esta sesión
 
 Qué archivos se crearon/editaron como resultado (specs, docs, código).
+
+## Bitácora de actos
+
+Una entrada por acto, en orden, agregada en el mismo paso en que se hace el acto. Cada una tiene su fila en `docs/INDEX.md` §6.
+
+1. **<qué se hizo>** — archivos: `<rutas>`. Por qué: <una línea>.
 ```
 
 ## Por qué existe esto

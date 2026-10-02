@@ -60,6 +60,7 @@ docs/sessions/       → bitácora de trazabilidad de sesiones de trabajo con IA
 
 - **`README.md` tiene marcadores de conflicto de merge sin resolver** (`<<<<<<<`/`=======`/`>>>>>>>` en las líneas ~28, ~57-65, ~88-97, de merges viejos `e3618c6` y `56ef925`). No se tocó porque requiere una decisión humana sobre qué lado del conflicto (comandos de `dev.sh`) es el vigente.
 - **`crates/obrero-core` no es `no_std` todavía**, pese a que el objetivo declarado del proyecto es correr la misma lógica en web y en ESP32-S3 sin asumir `std`. Hoy compila porque nunca pide nada que `std` no dé (es "sans-io" de hecho), pero no hay `#![no_std]` ni `extern crate alloc` — es deuda, no una garantía. Código nuevo (como el de `specs/clock.md`) debería nacer `no_std`-limpio; migrar el resto del crate es un trabajo aparte.
+- **`serde` en `obrero-core` arrastra `std`**: se declara sin `default-features = false` (`crates/obrero-core/Cargo.toml`), así que con la feature `serde` el core depende de `std`, en contra de `CLAUDE.md` §1. Pendiente; probablemente con `default-features = false, features = ["derive", "alloc"]`.
 - **`firmware/src/main.rs`** tiene tasks de demo (`task2`, `task3`) y bloques comentados grandes que `docs/product/firmware-mvp-0.md` ya marcó para descartar — pendiente de limpieza.
 
 ## 6. Registro de actos de IA
@@ -73,3 +74,9 @@ Una fila por acto de un agente que modificó archivos, agregada en el mismo paso
 | 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 3. Convenciones de escritura de documentos movidas a `docs/README.md` | `docs/README.md` |
 | 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 4. Sesiones sin exenciones + "Bitácora de actos" en la plantilla | `docs/sessions/README.md` |
 | 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 5. INDEX: `.claude/`, `docs/README.md`, sesión nueva, §4 y §6 | `docs/INDEX.md` |
+| 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 6. `CLAUDE.md` §6 "Dependencias": solo si son irremplazables y compatibles; las `0.x` requieren decisión humana | `CLAUDE.md` |
+| 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 7. Auditoría de dependencias: lista de `0.x` pendientes en §5 | `docs/INDEX.md` |
+| 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 8. `CLAUDE.md` §1/§6: todo compatible con ESP32-S3 y web; no se usa `std` si no es compatible | `CLAUDE.md` |
+| 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 9. Señalado `serde` con `std` en `obrero-core` (§5) | `docs/INDEX.md` |
+| 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 10. Vuelven a ser 5 pilares: "Dependencias" pasa a subsección de §1 (coherencia lógica) | `CLAUDE.md`, `docs/INDEX.md` |
+| 2026-10-01 | `2026-10-01-estilo-y-acoplamiento-trazabilidad.md` | 11. Dependencias actuales ratificadas por decisión humana; sale de §5 | `CLAUDE.md`, `docs/INDEX.md` |

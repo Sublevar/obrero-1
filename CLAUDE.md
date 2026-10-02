@@ -14,8 +14,24 @@ Cinco pilares que este archivo sostiene: coherencia lógica, estilo de código, 
 ## 1. Coherencia lógica
 
 - El core (`crates/obrero-core`) es **sans-io**: no hace threads, no lee timers reales, no hace I/O. Las plataformas (web, firmware) le empujan tiempo (`advance(now, lookahead)`) y le dan los bytes a enviar. Cualquier cambio que tiente a leer un reloj real o abrir un socket/puerto *dentro* de `crates/obrero-core` está rompiendo esa frontera — va en la plataforma, no en el core.
-- Disciplina `no_std` para código nuevo en `crates/obrero-core`: el objetivo del proyecto es que la misma lógica corra en web y en ESP32-S3. Código nuevo no debe depender de `std` (usar `core`/`alloc` cuando haga falta heap). El resto del crate todavía no es `no_std` — es deuda conocida (ver `docs/INDEX.md` §5), no una licencia para agregar más.
+- **Todo tiene que ser compatible con ESP32-S3 y con web.** La misma lógica corre en los dos targets, así que el código compartido (`crates/obrero-core` y cualquier código que consuman ambas plataformas) es `no_std`: solo `core`, y `alloc` cuando haga falta heap.
+- **No se usa `std` si no es compatible con los dos targets.** Que compile no alcanza: en `wasm32-unknown-unknown`, `std::time::Instant`, `std::thread`, `std::fs` y `std::net` compilan pero fallan en runtime. Solo la capa de plataforma (`obrero-wasm`, `firmware/`) puede tocar APIs propias de su target, y únicamente para hacer de frontera (I/O, tiempo real). La lógica no va ahí.
+- El resto de `obrero-core` todavía no es `no_std`: es deuda conocida (ver `docs/INDEX.md` §5), no una licencia para agregar más.
 - Un cambio a un concepto compartido (Clock, Pattern, Midi, ViewModel) se refleja en todos sus consumidores (bindings wasm, UI web, firmware) o se documenta explícitamente como diferido — no se deja a medio migrar sin decirlo.
+
+### Dependencias — solo si son irremplazables
+
+El criterio es la fiabilidad y el testeo: herramientas de uso extendido, mantenidas y con soporte de la comunidad. Una dependencia es código ajeno que el repo pasa a cargar en web y en ESP32-S3 durante años.
+
+- **No se agrega una librería salvo que la funcionalidad sea irremplazable**, es decir, que implementarla en el repo tenga un costo o un riesgo claramente mayor (p. ej. bindings de plataforma, USB/TinyUSB, `wasm-bindgen`). Primero se busca en `core`/`alloc` y en lo que ya está en el árbol de dependencias, no en `std` (ver arriba).
+- **Tiene que ser compatible** con:
+  - **ESP32-S3 y web a la vez**, si la usa código compartido: `no_std` + `alloc` (`default-features = false` si su default arrastra `std`), y que compile y funcione en `xtensa-esp32s3` y en `wasm32-unknown-unknown`. Una librería que solo anda en un target puede ir únicamente en la capa de plataforma de ese target (`obrero-wasm` o `firmware/`), nunca en el core;
+  - la licencia del repo, GPL-3.0-or-later;
+  - el toolchain del repo: `stable` en el workspace, `rust-version` del firmware.
+- **Versiones `0.x`, sin release 1.0**: su uso se cuestiona fuertemente. Solo entran por **decisión humana explícita**. Claude no agrega por su cuenta una dependencia `0.x`: la propone con sus alternativas (implementarla en el repo, una librería ≥1.0) y la persona decide. La decisión se registra en la bitácora de la sesión.
+- **Antes de proponer una dependencia**, Claude evalúa y deja por escrito en la sesión: versión y estabilidad, mantenimiento activo, adopción y uso en la comunidad, tests/CI propios, dependencias transitivas que arrastra y compatibilidad con los targets.
+- Toda dependencia nueva, o todo salto de versión mayor, es un acto con registro (ver §5) que incluye el porqué y las alternativas descartadas. Si cambia el árbol de un crate, también se actualiza `docs/INDEX.md`.
+- **Las dependencias actuales quedan ratificadas** por decisión humana (sesión `docs/sessions/2026-10-01-estilo-y-acoplamiento-trazabilidad.md`), incluidas las `0.x`: `wasm-bindgen`, `serde-wasm-bindgen`, `log`, `esp-idf-svc`, `embuild` y `dotenvy`. Solo se migran si una sesión posterior lo decide porque hay una opción mejor, y esa decisión se registra como cualquier otra.
 
 ## 2. Estilo de código
 

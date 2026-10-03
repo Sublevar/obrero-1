@@ -4,3 +4,5 @@ node_modules
 web/src/pkg
 web/dist
 .DS_Store
+*.zip
+.history
